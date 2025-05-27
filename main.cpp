@@ -2,13 +2,14 @@
 #include <ImageLoading.h>
 #include <Eigen/Dense>
 #include <vector>
-
+#include <string>
 
 int main(int argc, char const *argv[])
 {
-
+    std::vector<uint8_t> labels = ImagePreProcessor::readLabels();
     std::vector<std::vector<uint8_t>> images = ImagePreProcessor::readImages();
-    ImagePreProcessor::showImage(images[6],28,28);
+    std::cout << static_cast<int>(labels[24]) << std::endl;
+    ImagePreProcessor::showImage(images[24],28,28);
     return 0;
 }
 

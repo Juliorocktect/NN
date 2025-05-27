@@ -6,7 +6,7 @@
 #include <iostream>
 #include <vector>
 #include <SDL3/SDL.h>
-
+#include <Eigen/Dense>
 
 
 namespace ImagePreProcessor

@@ -26,6 +26,21 @@ namespace ImagePreProcessor
         }
      return images;
     }
+    std::vector<uint8_t> readLabels()
+    {
+        std::ifstream file("/home/julio/Documents/code/VNN/resources/train-labels.idx1-ubyte", std::ios::binary);
+        if (!file) throw std::runtime_error("Unable to open label file: labels");
+
+        int magic = readInt(file);
+        if (magic != 2049) throw std::runtime_error("Invalid label file!");
+
+        int numLabels = readInt(file);
+
+        std::vector<uint8_t> labels(numLabels);
+        file.read(reinterpret_cast<char*>(labels.data()), numLabels);
+
+        return labels;
+    }
 
     void showImage(const std::vector<uint8_t>& pixels, int width, int height) {
     SDL_Init(SDL_INIT_VIDEO);
