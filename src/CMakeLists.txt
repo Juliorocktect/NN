@@ -1,1 +1,1 @@
-set(SOURCE_FILES VNN.cpp)
+set(SOURCE_FILES VNN.cpp ImageLoading.cpp)
