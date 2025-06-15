@@ -22,8 +22,23 @@ Eigen::Matrix<double, 1, 10> NN::forwardPropagation(std::vector<uint8_t> &images
         Z1(i) = sigmoid(Z1(i));
     }
     //layer 2 calc
-    
-    
-
+    Eigen:: Matrix<double,480,784> Z2;
+    Z2 = w2 * Z1 + b2;
+    //Apply Sigmoid function
+    for (int i = 0;i < Z1.rows();i++)
+    {
+        for (int j = 0; j < Z1.cols();j++)
+        {
+            Z2(i,j) = sigmoid(Z2(i,j));
+        }
+    }
+    //Layer 3 Calulations
+    Eigen::Vector<double,10> output; //y_hat
+    output = w3 * Z2 + b3;
+    //Apply Sigmoid
+    for (int i = 0;i < output.rows();i++)
+    {
+        output(i) = sigmoid(output(i));
+    }
     return Eigen::Matrix<double, 1, 10>();
 }

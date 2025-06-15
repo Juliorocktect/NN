@@ -13,6 +13,8 @@ class NN
 private:
     double sigmoid(double x);
     Eigen::Matrix<double,480,784> w1;
+    Eigen::Matrix<double,480,784> w2;
+    Eigen::Vector<double,10> w3;
     Eigen::Vector<double,784> b1;
     Eigen::Vector<double,480> b2;
     Eigen::Vector<double,200> b3;
