@@ -17,6 +17,8 @@ class NN
 private:
     Eigen::VectorXd softmax(const Eigen::VectorXd& z);
     double sigmoid(double x);
+    double crossEntropyLoss(const Eigen::VectorXd& y_hat, int correct_label);// Andere Loss Function
+    double costF(double y,Eigen::VectorXd& y_hat);//Berechnet den Verlust vom Ergebnis zum eigentlichen Ergebnis
     Eigen::MatrixXd w1;//480x784
     Eigen::MatrixXd w2;//200x480
     Eigen::MatrixXd w3;//180x200
@@ -30,7 +32,6 @@ public:
     NN();
     ~NN();
     Eigen::MatrixXd forwardPropagation(std::vector<uint8_t> &image);
-    double lossF();
-
+    
 };
 #endif

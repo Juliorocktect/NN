@@ -63,7 +63,7 @@ Eigen::MatrixXd NN::forwardPropagation(std::vector<uint8_t> &image)//Nur ein Bil
     y_hat = softmax(y_hat);
     return y_hat;//Nur für ein Bild die Berechnung
 }
-double NN::lossF()
+double NN::costF(double y,Eigen::VectorXd& y_hat)
 {
-    
+    return (-1.0 * (y-(y_hat.array().log()) + (1-y)*(1.0 - y_hat.array()).log()));
 }
