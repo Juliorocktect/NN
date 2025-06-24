@@ -13,6 +13,8 @@ include_directories(include)
 add_library(vnn_lib
     src/VNN.cpp
     src/ImageLoading.cpp
+    src/backprop.cpp
+    src/forwardProp.cpp
 )
 
 target_include_directories(vnn_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

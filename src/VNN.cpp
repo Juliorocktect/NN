@@ -10,6 +10,14 @@ double NN::sigmoidDeriviative(double x)
     double y = sigmoid(x);
     return y * (1 - y); 
 }
+void NN::printGreen(const char* text)
+{
+    std::cout << "\033[1;32m"<< text << "\033[0m\n";
+}
+void NN::printRed(const char* text)
+{
+    std::cout << "\033[1;33m"<< text << "\033[0m\n";
+}
 Eigen::MatrixXd NN::softmax(const Eigen::MatrixXd& m) 
 {
     Eigen::MatrixXd result = m;
@@ -30,62 +38,47 @@ NN::NN(std::vector<uint8_t>& labels)
     w2 = Eigen::MatrixXd::Random(200, 480) * 0.01;
     w3 = Eigen::MatrixXd::Random(180, 200) * 0.01;
     w4 = Eigen::MatrixXd::Random(10, 180) * 0.01;
+    A1 = Eigen::MatrixXd(SIZE_FIRST_LAYER,SIZE_TRAINING_DATA);
+    A2 = Eigen::MatrixXd(SIZE_SECOND_LAYER,SIZE_TRAINING_DATA);
+    A3 = Eigen::MatrixXd(SIZE_THIRD_LAYER,SIZE_TRAINING_DATA);
     Z1 = Eigen::MatrixXd(SIZE_FIRST_LAYER,SIZE_TRAINING_DATA);
     Z2 = Eigen::MatrixXd(SIZE_SECOND_LAYER,SIZE_TRAINING_DATA);
     Z3 = Eigen::MatrixXd(SIZE_THIRD_LAYER,SIZE_TRAINING_DATA);
-    y_hat = Eigen::MatrixXd(SIZE_TRAINING_DATA,10);
-    y = Eigen::MatrixXd::Zero(SIZE_TRAINING_DATA,10);
+    y_hat = Eigen::MatrixXd(10, SIZE_TRAINING_DATA);
     b1 = (Eigen::MatrixXd::Zero(480, 1));//Überflüssige Klammer?
     b2 = (Eigen::MatrixXd::Zero(200, 1));
     b3 = (Eigen::MatrixXd::Zero(180, 1)); 
     b4 = (Eigen::MatrixXd::Zero(10, 1)); 
+    dE_dYHAT = Eigen::MatrixXd::Zero(10,SIZE_TRAINING_DATA);
+    db4 = Eigen::MatrixXd::Zero(10,1);
+    db3 = Eigen::MatrixXd::Zero(180,1);
+    db2 = Eigen::MatrixXd::Zero(200,1);
+    db1 = Eigen::MatrixXd::Zero(480,1);
+    dYHAT_dZ3 = Eigen::MatrixXd(180,SIZE_TRAINING_DATA);
+    dZ2 = Eigen::MatrixXd(200,SIZE_TRAINING_DATA);
+    dW4 = Eigen::MatrixXd(10,180);
+    dW3 = Eigen::MatrixXd(180,200);
+    dW2 = Eigen::MatrixXd(200,480);
+    dW1 = Eigen::MatrixXd(480,784);
+    inputData = Eigen::MatrixXd(784,SIZE_TRAINING_DATA);
+
     initilizeYMatrix(labels);
 }
 void NN::initilizeYMatrix(const std::vector<uint8_t>& labels)
 {
-    for(size_t i = 0;i < SIZE_TRAINING_DATA;i++)
+    y = Eigen::MatrixXd::Zero(SIZE_TRAINING_DATA, 10); // (Zeilen: Bilder, Spalten: Klassen)
+    for (size_t i = 0; i < SIZE_TRAINING_DATA; i++)
     {
-        y(i,labels[i]) = 1.0;
+        if (labels[i] < 10) // Sicherheitscheck für MNIST
+            y(i, labels[i]) = 1.0;
     }
-    
 }
-// returns y_hat for avery iamg fed from the vector
-Eigen::MatrixXd NN::forwardPropagation(Eigen::MatrixXd& images)//@Param 784x40.000
+void NN::setInputData(Eigen::MatrixXd& images)
 {
-    //layer 1 calculations
-    //A0  = A0.transpose().eval();//1x784
-    std::cout << "Start Calculating\n";
-    //Ergebnis Matrix 480xSIZE_TRAINING_DATA
-    Z1 = (w1 * images).colwise() + b1.col(0);
-    std::cout << Z1.rows() << std::endl;
-    for(int i = 0; i < Z1.rows(); i++) {
-        Z1(i) = sigmoid(Z1(i));
-    }
-    std::cout << "Layer 1 Passed\n";
-   //layer 2 calc
-   //layer 2: 200 Nodes
-    Z2 = (w2 * Z1).colwise() + b2.col(0);
-    //Apply Sigmoid function
-    for (int i = 0;i < Z2.rows();i++)
-    {
-        Z2(i) = sigmoid(Z2(i));
-    }
-    std::cout << "Layer 2 Passed\n";
-    //Layer 3 Calulations
-    //Ergebnis Layer 3 180xSIZE_TRAINING_DATA
-    Z3 = (w3 * Z2).colwise() + b3.col(0);
-    //Apply Sigmoid
-    for (int i = 0;i < Z3.rows();i++)
-    {
-        Z3(i) = sigmoid(Z3(i));
-    }
-    std::cout << "Layer 3 Passed\n";
-    // Output Layer Calculus
-    y_hat = (w4 * Z3).colwise() + b4.col(0);
-    y_hat = softmax(y_hat);
-    std::cout << "Output Layer Passed\n"; 
-    return y_hat;//Ein Durchlauf
+    inputData = images;
 }
+
+
 double NN::costF(double y,const Eigen::VectorXd& y_hat)
 {
     // Assuming y is the index of the correct class (for classification)
@@ -122,15 +115,4 @@ double NN::sumCrossEntropyLoss(std::vector<uint8_t>& labels)
         sum += costF(labels[i],y_hat.col(i));
     }
     return sum/SIZE_TRAINING_DATA;
-}
-void NN::backpropagateOutputLayer(std::vector<uint8_t>& labels)
-{
-    std::cout << "Starte BackPropagation\n";
-    double e = sumCrossEntropyLoss(labels);//Mean Squared Error Aus (y_hat - y)^2 wird y_hat - y
-    //Ableitung vom Fehler nach y_hat
-    Eigen::MatrixXd dE_dYHAT(10,200);//Matrix 10x200
-    std::cout << "y_hat: " << y_hat.rows() << "x" << y_hat.cols() << std::endl;
-    std::cout << "y: " << y.rows() << "x" << y.cols() << std::endl;
-    dE_dYHAT = y_hat - y;
-    std::cout << dE_dYHAT.col(0);
 }
