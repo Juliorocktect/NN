@@ -38,3 +38,16 @@ void NN::backpropagateFirstLayer()
     db1 = dZ1.rowwise().mean();
     printGreen("Layer 1 derived");
 }
+void NN::updateWeightsAndBiases()
+{
+    //Update weights
+    w4 -= LEARNING_RATE * dW4;
+    w3 -= LEARNING_RATE * dW3;
+    w2 -= LEARNING_RATE * dW2;
+    w1 -= LEARNING_RATE * dW1;
+    //update biases
+    b4 -= LEARNING_RATE * db4;
+    b3 -= LEARNING_RATE * db3;
+    b2 -= LEARNING_RATE * db2;
+    b1 -= LEARNING_RATE * db1;
+}

@@ -9,8 +9,8 @@ const int SIZE_INPUT_LAYER = 784;
 const int SIZE_FIRST_LAYER = 480;
 const int SIZE_SECOND_LAYER = 200;
 const int SIZE_THIRD_LAYER = 180;
-const int SIZE_TRAINING_DATA = 200;
-const double LEARNING_RATE = 0.5;
+const int SIZE_TRAINING_DATA = 2000;
+const double LEARNING_RATE = 0.03;
 
 double sigmoid(double x);
 class NN
@@ -25,10 +25,12 @@ private:
     void initilizeYMatrix(const std::vector<uint8_t>& labels);
     double costF(double y,const Eigen::VectorXd& y_hat);//Berechnet den Verlust vom Ergebnis zum eigentlichen Ergebnis
     Eigen::MatrixXd inputData;// 784x SIZE_TRAINING_DATA
+    //Weights
     Eigen::MatrixXd w1;//480x784
     Eigen::MatrixXd w2;//200x480
     Eigen::MatrixXd w3;//180x200
     Eigen::MatrixXd w4;//10x180
+    //Neurons
     Eigen::MatrixXd Z1;//480xSIZE_TRAINING_DATA
     Eigen::MatrixXd Z2;//200xSIZE_TRAINING_DATA
     Eigen::MatrixXd Z3;//180xSIZE_TRAINING_DATA
@@ -37,7 +39,9 @@ private:
     Eigen::MatrixXd A2;//200xSIZE_TRAINING_DATA
     Eigen::MatrixXd A3;//180xSIZE_TRAINING_DATA
     Eigen::MatrixXd y_hat;//10xSIZE_TRRAINING_DATA
-    Eigen::MatrixXd y;// 10xSIZE_TRAINING_DATA
+
+    Eigen::MatrixXd y;// 10xSIZE_TRAINING_DATA Actual Result
+    //biases
     Eigen::MatrixXd b1; //bias 480x1
     Eigen::MatrixXd b2;//bias 200x1
     Eigen::MatrixXd b3;//bias 180x1 3. hidden layer
@@ -64,5 +68,6 @@ public:
     void backpropagateSecondLayer();//calculates the deriviatives of Layer 2
     void backpropagateFirstLayer();
     void setInputData(Eigen::MatrixXd& images);
+    void updateWeightsAndBiases();
 };
 #endif

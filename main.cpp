@@ -11,8 +11,8 @@ int main(int argc, char const *argv[])
     //std::cout << static_cast<int>(labels[24]) << std::endl;
     //ImagePreProcessor::showImage(images[24],28,28);
     NN* n = new NN(labels);
-    Eigen::MatrixXd inputMatrix(784,200);
-    for(size_t j = 0; j < 200 ;j++)
+    Eigen::MatrixXd inputMatrix(784,2000);
+    for(size_t j = 0; j < 2000 ;j++)
     {
         for (size_t i = 0; i < images[0].size(); ++i)
         {
@@ -20,11 +20,15 @@ int main(int argc, char const *argv[])
         }
     }
     n->setInputData(inputMatrix);
-    n->forwardPropagation();//feed all training data, backpropagate, update, again
-    std::cout << "cost after one cycle\t" << n->sumCrossEntropyLoss(labels) << std::endl;
-    n->backpropagateOutputLayer(labels);
-    n->backpropagateThirdLayer();
-    n->backpropagateSecondLayer();
-    n-> backpropagateFirstLayer();
+    for (int i = 0;i < 300;i++)
+    {
+        n->forwardPropagation();//feed all training data, backpropagate, update, again
+        std::cout << "cost after one cycle\t" << n->sumCrossEntropyLoss(labels) << std::endl;
+        n->backpropagateOutputLayer(labels);
+        n->backpropagateThirdLayer();
+        n->backpropagateSecondLayer();
+        n-> backpropagateFirstLayer();
+        n->updateWeightsAndBiases();
+    }
     return 0;
 }
