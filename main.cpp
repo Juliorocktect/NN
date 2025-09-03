@@ -3,10 +3,13 @@
 #include <Eigen/Dense>
 #include <vector>
 #include <string>
+#include <Maths.h>
+#include <cuda_runtime.h>
+
 
 int main(int argc, char const *argv[])
 {
-    std::vector<uint8_t> labels = ImagePreProcessor::readLabels();
+    /* std::vector<uint8_t> labels = ImagePreProcessor::readLabels();
     std::vector<std::vector<uint8_t>> images = ImagePreProcessor::readImages();
     //std::cout << static_cast<int>(labels[24]) << std::endl;
     //ImagePreProcessor::showImage(images[24],28,28);
@@ -29,6 +32,7 @@ int main(int argc, char const *argv[])
         n->backpropagateSecondLayer();
         n-> backpropagateFirstLayer();
         n->updateWeightsAndBiases();
-    }
+    } */
+    executeFirstKernel();
     return 0;
 }
