@@ -1,1 +1,1 @@
-set(SOURCE_FILES Matrix.cu VNN.cpp ImageLoading.cpp forwardProp.cpp backprop.cpp)
+set(SOURCE_FILES  Matrix.cu VNN.cpp ImageLoading.cpp forwardProp.cpp backprop.cpp GPUMatrix.cpp)

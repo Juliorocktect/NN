@@ -12,7 +12,7 @@ set(CMAKE_CPP_COMPILER clang)
 include_directories(include)
 
 # Library aus src und include
-add_library(MATHS src/Matrix.cu)
+add_library(MATHS src/Matrix.cu src/GPUMatrix.cpp)
 add_library(vnn_lib
     src/VNN.cpp
     src/ImageLoading.cpp
