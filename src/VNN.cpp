@@ -34,39 +34,66 @@ Eigen::Matrix<double,1,10> forwardPropagation(std::vector<std::vector<uint8_t>>&
 }
 NN::NN(std::vector<uint8_t>& labels)
 {
+    /* w1 = GPUMatrix(Eigen::MatrixXd::Random(480, 784) * 0.01);
+    w2 = GPUMatrix(Eigen::MatrixXd::Random(200, 480) * 0.01);
+    w3 = GPUMatrix(Eigen::MatrixXd::Random(180, 200) * 0.01);
+    w4 = GPUMatrix(Eigen::MatrixXd::Random(10, 180) * 0.01);
+    A1 = GPUMatrix(Eigen::MatrixXd(SIZE_FIRST_LAYER, SIZE_TRAINING_DATA));
+    A2 = GPUMatrix(Eigen::MatrixXd(SIZE_SECOND_LAYER, SIZE_TRAINING_DATA));
+    A3 = GPUMatrix(Eigen::MatrixXd(SIZE_THIRD_LAYER, SIZE_TRAINING_DATA));
+    Z1 = GPUMatrix(Eigen::MatrixXd(SIZE_FIRST_LAYER, SIZE_TRAINING_DATA));
+    Z2 = GPUMatrix(Eigen::MatrixXd(SIZE_SECOND_LAYER, SIZE_TRAINING_DATA));
+    Z3 = GPUMatrix(Eigen::MatrixXd(SIZE_THIRD_LAYER, SIZE_TRAINING_DATA));
+    y_hat = GPUMatrix(Eigen::MatrixXd(10, SIZE_TRAINING_DATA));
+    b1 = GPUMatrix(Eigen::MatrixXd::Zero(480, 1));
+    b2 = GPUMatrix(Eigen::MatrixXd::Zero(200, 1));
+    b3 = GPUMatrix(Eigen::MatrixXd::Zero(180, 1));
+    b4 = GPUMatrix(Eigen::MatrixXd::Zero(10, 1));
+    dE_dYHAT = GPUMatrix(Eigen::MatrixXd::Zero(10, SIZE_TRAINING_DATA));
+    db4 = GPUMatrix(Eigen::MatrixXd::Zero(10, 1));
+    db3 = GPUMatrix(Eigen::MatrixXd::Zero(180, 1));
+    db2 = GPUMatrix(Eigen::MatrixXd::Zero(200, 1));
+    db1 = GPUMatrix(Eigen::MatrixXd::Zero(480, 1));
+    dYHAT_dZ3 = GPUMatrix(Eigen::MatrixXd(180, SIZE_TRAINING_DATA));
+    dZ2 = GPUMatrix(Eigen::MatrixXd(200, SIZE_TRAINING_DATA));
+    dW4 = GPUMatrix(Eigen::MatrixXd(10, 180));
+    dW3 = GPUMatrix(Eigen::MatrixXd(180, 200));
+    dW2 = GPUMatrix(Eigen::MatrixXd(200, 480));
+    dW1 = GPUMatrix(Eigen::MatrixXd(480, 784));
+    inputData = GPUMatrix(Eigen::MatrixXd(784,SIZE_TRAINING_DATA)); */
     w1 = Eigen::MatrixXd::Random(480, 784) * 0.01;
     w2 = Eigen::MatrixXd::Random(200, 480) * 0.01;
     w3 = Eigen::MatrixXd::Random(180, 200) * 0.01;
     w4 = Eigen::MatrixXd::Random(10, 180) * 0.01;
-    A1 = Eigen::MatrixXd(SIZE_FIRST_LAYER,SIZE_TRAINING_DATA);
-    A2 = Eigen::MatrixXd(SIZE_SECOND_LAYER,SIZE_TRAINING_DATA);
-    A3 = Eigen::MatrixXd(SIZE_THIRD_LAYER,SIZE_TRAINING_DATA);
-    Z1 = Eigen::MatrixXd(SIZE_FIRST_LAYER,SIZE_TRAINING_DATA);
-    Z2 = Eigen::MatrixXd(SIZE_SECOND_LAYER,SIZE_TRAINING_DATA);
-    Z3 = Eigen::MatrixXd(SIZE_THIRD_LAYER,SIZE_TRAINING_DATA);
+    A1 = Eigen::MatrixXd(SIZE_FIRST_LAYER, SIZE_TRAINING_DATA);
+    A2 = Eigen::MatrixXd(SIZE_SECOND_LAYER, SIZE_TRAINING_DATA);
+    A3 = Eigen::MatrixXd(SIZE_THIRD_LAYER, SIZE_TRAINING_DATA);
+    Z1 = Eigen::MatrixXd(SIZE_FIRST_LAYER, SIZE_TRAINING_DATA);
+    Z2 = Eigen::MatrixXd(SIZE_SECOND_LAYER, SIZE_TRAINING_DATA);
+    Z3 = Eigen::MatrixXd(SIZE_THIRD_LAYER, SIZE_TRAINING_DATA);
     y_hat = Eigen::MatrixXd(10, SIZE_TRAINING_DATA);
-    b1 = (Eigen::MatrixXd::Zero(480, 1));//Überflüssige Klammer?
-    b2 = (Eigen::MatrixXd::Zero(200, 1));
-    b3 = (Eigen::MatrixXd::Zero(180, 1)); 
-    b4 = (Eigen::MatrixXd::Zero(10, 1)); 
-    dE_dYHAT = Eigen::MatrixXd::Zero(10,SIZE_TRAINING_DATA);
-    db4 = Eigen::MatrixXd::Zero(10,1);
-    db3 = Eigen::MatrixXd::Zero(180,1);
-    db2 = Eigen::MatrixXd::Zero(200,1);
-    db1 = Eigen::MatrixXd::Zero(480,1);
-    dYHAT_dZ3 = Eigen::MatrixXd(180,SIZE_TRAINING_DATA);
-    dZ2 = Eigen::MatrixXd(200,SIZE_TRAINING_DATA);
-    dW4 = Eigen::MatrixXd(10,180);
-    dW3 = Eigen::MatrixXd(180,200);
-    dW2 = Eigen::MatrixXd(200,480);
-    dW1 = Eigen::MatrixXd(480,784);
-    inputData = Eigen::MatrixXd(784,SIZE_TRAINING_DATA);
-
+    b1 = Eigen::MatrixXd::Zero(480, 1);
+    b2 = Eigen::MatrixXd::Zero(200, 1);
+    b3 = Eigen::MatrixXd::Zero(180, 1);
+    b4 = Eigen::MatrixXd::Zero(10, 1);
+    dE_dYHAT = Eigen::MatrixXd::Zero(10, SIZE_TRAINING_DATA);
+    db4 = Eigen::MatrixXd::Zero(10, 1);
+    db3 = Eigen::MatrixXd::Zero(180, 1);
+    db2 = Eigen::MatrixXd::Zero(200, 1);
+    db1 = Eigen::MatrixXd::Zero(480, 1);
+    dYHAT_dZ3 = Eigen::MatrixXd(180, SIZE_TRAINING_DATA);
+    dZ2 = Eigen::MatrixXd(200, SIZE_TRAINING_DATA);
+    dW4 = Eigen::MatrixXd(10, 180);
+    dW3 = Eigen::MatrixXd(180, 200);
+    dW2 = Eigen::MatrixXd(200, 480);
+    dW1 = Eigen::MatrixXd(480, 784);
+    inputData = Eigen::MatrixXd(784, SIZE_TRAINING_DATA);
     initilizeYMatrix(labels);
 }
 void NN::initilizeYMatrix(const std::vector<uint8_t>& labels)
 {
-    y = Eigen::MatrixXd::Zero(SIZE_TRAINING_DATA, 10); // (Zeilen: Bilder, Spalten: Klassen)
+    y = Eigen::MatrixXd::Zero(SIZE_TRAINING_DATA, 10);
+     // (Zeilen: Bilder, Spalten: Klassen)
     for (size_t i = 0; i < SIZE_TRAINING_DATA; i++)
     {
         if (labels[i] < 10) // Sicherheitscheck für MNIST
