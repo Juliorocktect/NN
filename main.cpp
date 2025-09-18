@@ -49,6 +49,14 @@ int main(int argc, char const *argv[])
     std::cout << "\n";
     result.transpose();
     result.printMat();
-    std::cout << nr.transpose().eval();
+    std::cout << nr.transpose().eval() << std::endl;
+    double matrix[9] = {2.5, 1.2, 3.7,
+                        0.9, 4.1, 2.2,
+                        3.3, 0.5, 1.8}; 
+    double* r = execcuteSoftMaxKernel(matrix,3,3);
+    GPUMatrix neu(3,3);
+    std::cout << "\n";
+    neu.matrix = r;
+    neu.printMat();
     return 0;
 }

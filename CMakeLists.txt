@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CPP_COMPILER clang)
-#
+
 find_package(CUDAToolkit REQUIRED)
 include_directories(include)
 
@@ -25,6 +25,11 @@ target_include_directories(vnn_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Executable
 add_executable(main_exec main.cpp)
+
+#Set cuda arch for rtx 3060
+set_target_properties(main_exec PROPERTIES
+    CUDA_ARCHITECTURES 86
+)
 
 #get CUDA
 set_target_properties(main_exec PROPERTIES

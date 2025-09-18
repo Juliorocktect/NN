@@ -1,5 +1,10 @@
 #include "Maths.h"
 
+__device__ double sigmoidDeriviative(double x)
+{
+    double y = sigmoid(x);
+    return y * (1 - y); 
+}
 __device__ double sigmoid(double x){
     if (x < -100.0) x = -100.0;
     if (x >  100.0) x =  100.0;
@@ -51,9 +56,7 @@ __global__ void matrixMultiplication(const double* mat1, const double* mat2, dou
             sum += mat1[row * cols1 + i] * mat2[i * cols2 + col];
         }
         mat3[row * cols2 + col] = sum;
-        printf("row: %d, col: %d, value: %f\n", row, col, sum); // Debug-Ausgabe
     }
-
 }
 
  void executeFirstKernel()
@@ -222,4 +225,115 @@ __global__ void transposeMatrix(const double* mat1,double* matResult,int rows1,i
     {
         matResult[cols + cols1 * rows] = mat1[cols * rows2 + rows];
     }
+}
+__global__ void applySigmoidDeriviative(const double* mat1,double* mat_result,int size)
+{
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < size)
+    {
+        mat_result[idx] = sigmoidDeriviative(mat1[idx]);
+    }
+}
+double* executeSigmoidDeriviativeKernel(const double* mat1,int rows,int cols)
+{
+    double* d_mat_result;
+    double* d_mat1;
+    size_t n = rows * cols * sizeof(double);
+    int o = rows*cols;
+    double* h_result = new double[o];
+    cudaMalloc((void**)&d_mat_result,n);
+    cudaMalloc((void**)&d_mat1,n);
+    cudaMemcpy(d_mat1,mat1,n,cudaMemcpyHostToDevice);
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (o + threadsPerBlock - 1)/threadsPerBlock;
+    applySigmoidDeriviative<<<threadsPerBlock,blocksPerGrid>>>(d_mat1,d_mat_result,o);
+    cudaDeviceSynchronize();
+    cudaMemcpy(h_result,d_mat1,n,cudaMemcpyDeviceToHost);
+    cudaFree(&d_mat_result);
+    cudaFree(&d_mat1);
+    return h_result;
+}
+double* executeMeanMatrixKernel(double* mat,int rows,int cols)
+{
+    double* d_mat_result;
+    double* d_mat;
+    size_t size = rows * cols * sizeof(double);
+    int n = rows * cols;
+    double* h_res = new double[n];
+    cudaMalloc((void**)& d_mat,size);
+    cudaMalloc((void**)&d_mat_result,size);
+
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (n + threadsPerBlock -1)/threadsPerBlock;
+    
+    meanMatrixKernel<<<threadsPerBlock,blocksPerGrid>>>(d_mat,d_mat_result,rows,cols);
+    cudaDeviceSynchronize();
+    cudaMemcpy(h_res,d_mat_result,size,cudaMemcpyDeviceToHost);
+
+    cudaFree(&d_mat_result);
+    cudaFree(&d_mat);
+    return h_res;
+
+}
+__global__ void meanMatrixKernel(const double* mat,double* resultMatrix,int rows, int cols)
+{
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if ((rows*cols) < idx)
+    {
+        double sum  = 0.0;
+        for (int i  = 0;i < cols;i++)
+        {
+            sum += mat[idx +i ];
+        }
+        resultMatrix[idx] = sum;
+    }
+}
+__global__ void applyVecSoftMaxKernel(const double* mat, double* matResult, int rows, int cols)
+{
+    int col = blockIdx.x;
+    int row = threadIdx.x;
+    
+    if (col < cols && row < rows)
+    {
+        double max;
+        max = mat[ 0 * cols + col];
+        for (int i = 1;i< rows;i++)//bei eins, weil 0 ist schon uf max gesetztt
+        {
+            if (mat[i*cols+col] > max)
+            {
+                max  = mat[i*cols+col];
+            }            
+        }
+        printf("max:%f\n",max);
+        //e^(x - max)//Warum darf auf meiner GRAKA kein double benutzen
+        __shared__ double sum;
+        if (row == 0) 
+        {
+            sum = 0.0;
+            for (int i = 0; i < rows; i++) 
+            {
+                sum += exp(mat[i*cols + col] - max);
+            }
+        }
+        printf("sum:%f\n",sum);
+        matResult[row* cols + col] = exp(mat[row * cols + col] - max)/sum;
+    }
+}
+double* execcuteSoftMaxKernel(double* mat, int rows,int cols)
+{
+    double* d_matResult;
+    double* d_mat;
+    double* h_matRes = new double[cols*rows];
+    size_t size = rows*cols*sizeof(double);
+    cudaMalloc((void**)&d_mat,size);
+    cudaMalloc((void**)&d_matResult,size);
+
+    cudaMemcpy(d_mat,mat,size,cudaMemcpyHostToDevice);
+    dim3 grids(cols);
+    dim3 block(rows);
+    applyVecSoftMaxKernel<<< grids,block>>>(d_mat, d_matResult, rows, cols);
+    cudaMemcpy(h_matRes,d_matResult,size,cudaMemcpyDeviceToHost);
+    cudaFree(d_matResult);
+    cudaFree(d_mat);
+    return h_matRes;
 }
