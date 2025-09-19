@@ -337,3 +337,21 @@ double* execcuteSoftMaxKernel(double* mat, int rows,int cols)
     cudaFree(d_mat);
     return h_matRes;
 }
+double* executeSigmoidKernel(const double* vec,int cols,int rows)
+{
+    double* d_matResult;
+    double* d_mat;
+    size_t sizeT = cols*rows * sizeof(double);
+    double* h_matResult = new double[cols*rows];
+    cudaMalloc((void**)&d_mat,sizeT);
+    cudaMalloc((void**)&d_matResult,sizeT);
+    cudaMemcpy(d_mat,vec,sizeT,cudaMemcpyHostToDevice);
+    int threads = 512;
+    dim3 block(rows);
+    applySigmoidToVector<<<threads,block>>>(d_mat,d_matResult,(rows*cols));
+
+    cudaMemcpy(h_matResult,d_matResult,sizeT,cudaMemcpyDeviceToHost);
+    cudaFree(d_matResult);
+    cudaFree(d_mat);
+    return h_matResult;
+}

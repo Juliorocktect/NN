@@ -66,3 +66,28 @@ void GPUMatrix::transpose()
     rows = cols;
     cols = tmp;
 }
+void GPUMatrix::init()
+{
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(-0.1, 0.1);
+
+    for (int i = 0; i < rows * cols; ++i)
+    {
+        matrix[i] = dis(gen);
+    }
+}
+void GPUMatrix::initZero()
+{
+    matrix = {0};
+}
+GPUMatrix GPUMatrix::sigmoid()
+{
+    GPUMatrix m(rows,cols);
+    m.matrix = executeSigmoidKernel(matrix,rows,cols);
+    return m;
+}
+void GPUMatrix::softmax()
+{
+    matrix = execcuteSoftMaxKernel(matrix,rows,cols);
+}

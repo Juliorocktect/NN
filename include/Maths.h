@@ -5,9 +5,9 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
 #include <Eigen/Dense>
+#include <random>
 #include <iostream>
-//TODO: Mittelwert einer Matrix pro spalte berechnen
-//TODO: Apply Softmax function
+//TODO: Store Matrix on Graphicscard
 __device__ double sigmoid(double x);
 __device__ double meanPerVector(double* vec);
 __global__ void applyVecSoftMaxKernel(const double* mat,double* matResult,int rows1,int cols1);
@@ -17,7 +17,7 @@ double* execcuteSoftMaxKernel(double* mat, int rows,int cols);
 double* executeMeanMatrixKernel(double* mat,int rows,int cols);//result must be a row vector
 double* executeSigmoidDeriviativeKernel(const double* mat1,int rows,int cols);
 __global__ void MatrixAdd(const double* mat1,const double* mat2,double* matResult,int size);
-void executeSigmoidKernel(const double* vec,double* vecResult,int size);
+double* executeSigmoidKernel(const double* vec,int cols,int rows);
 __global__ void vectorAdd(const double* vec1,const double* vec2, double* vec3,int size);
 __global__ void transposeMatrix(const double* mat1,double* matResult,int rows1,int cols1,int rows2,int cols2); 
 void executeFirstKernel();
@@ -48,5 +48,9 @@ class GPUMatrix
         int getCols();
         void printMat();
         void transpose();
+        void init();
+        void initZero();
+        GPUMatrix sigmoid();
+        void softmax();
 };
 #endif

@@ -13,6 +13,9 @@ include_directories(include)
 # Library aus src und include
 add_library(MATHS src/Matrix.cu src/GPUMatrix.cpp)
 add_library(vnn_lib
+    src/backPropNNG.cpp
+    src/forwardPropNNG.cpp
+    src/NNG.cpp
     src/VNN.cpp
     src/ImageLoading.cpp
     src/backprop.cpp

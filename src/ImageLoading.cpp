@@ -8,7 +8,30 @@ namespace ImagePreProcessor
         ifs.read(reinterpret_cast<char*>(bytes), 4);
         return (int(bytes[0]) << 24) | (int(bytes[1]) << 16) | (int(bytes[2]) << 8) | int(bytes[3]);
     }
+    double* loadImages()
+    {
+        std::ifstream imageFile("/home/julio/Documents/code/VNN/resources/train-images.idx3-ubyte", std::ios::binary);
+        if (!imageFile) throw std::runtime_error("Unable to open image file");
+        int magic = readInt(imageFile);
+        if (magic != 2051) throw std::runtime_error("Invalid image file!");
 
+        int numImages = readInt(imageFile);
+        int rows = readInt(imageFile);
+        int cols = readInt(imageFile);
+
+        size_t totalSize = numImages * rows * cols;
+        double* images = new double[totalSize];
+
+        std::vector<uint8_t> buffer(rows * cols);
+
+        for (int i = 0; i < numImages; ++i) {
+            imageFile.read(reinterpret_cast<char*>(buffer.data()), rows * cols);
+            for (int j = 0; j < rows * cols; ++j) {
+                images[i * rows * cols + j] = static_cast<double>(buffer[j]) / 255.0; // Normalisierung
+            }
+        }
+        return images;
+    }
     std::vector<std::vector<uint8_t>> readImages()
     {
         std::ifstream imageFile("/home/julio/Documents/code/VNN/resources/train-images.idx3-ubyte",std::ios::binary);
@@ -75,6 +98,5 @@ namespace ImagePreProcessor
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
-
 
 };

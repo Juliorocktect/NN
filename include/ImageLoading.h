@@ -15,5 +15,6 @@ namespace ImagePreProcessor
     std::vector<std::vector<uint8_t>> readImages();
     std::vector<uint8_t> readLabels();
     void showImage(const std::vector<uint8_t>& pixels, int width, int height); 
+    double* loadImages();
 }
 #endif
