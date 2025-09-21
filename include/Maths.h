@@ -13,15 +13,20 @@ __device__ double meanPerVector(double* vec);
 __device__ double costF(double* vec1,double* vec2,int sizeVec1);
 __global__ void applyVecSoftMaxKernel(const double* mat,double* matResult,int rows1,int cols1);
 __global__ void meanMatrixKernel(const double* mat,double* resultMatrix,int rows, int cols);
+__global__ void hadamardKernel(double* mat1,double* mat2,double* mat_result,int rows,int cols);
 __global__ void applySigmoidDeriviative(const double* mat1,double* mat_result,int size);
+double* executeHadamardKernel(double* mat,double* mat2,int row1,int col1,int row2,int col2);
 double* execcuteSoftMaxKernel(double* mat, int rows,int cols);
 double* executeMeanMatrixKernel(double* mat,int rows,int cols);//result must be a row vector
 double* executeSigmoidDeriviativeKernel(const double* mat1,int rows,int cols);
 __global__ void MatrixAdd(const double* mat1,const double* mat2,double* matResult,int size);
 double* executeSigmoidKernel(const double* vec,int cols,int rows);
 __global__ void vectorAdd(const double* vec1,const double* vec2, double* vec3,int size);
-__global__ void transposeMatrix(const double* mat1,double* matResult,int rows1,int cols1,int rows2,int cols2); 
+__global__ void transposeMatrix(const double* mat1,double* matResult,int rows1,int cols1,int rows2,int cols2);
 void executeFirstKernel();
+double* matrixSub(double* mat,double* mat2, int rows1,int cols1,int rows2,int cols2);
+__global__ void matrixSubKernel(double* mat1,double* mat2,double* matRes,int cols,int rows);
+__global__ void vectorAddMatrixKernel(double* mat,double* vec,double* mat_result,int sizeVec,int rows,int cols);
 __global__ void applySigmoidToVector(const double* vec1,double* h_resVec,int size);
 __global__ void matrixMultiplication(const double* mat1, const double* mat2, double* mat3, int rows1, int cols1, int cols2);
 double* executeMatrixMultiplicationKernel(const double* mat1,const double* mat2,const int rows1,const int cols1,const int rows2,const int cols2);
@@ -30,6 +35,8 @@ double* executeMatrixTransposition(const double* mat1,int rows,int cols);
 void matrixMultiplicationCPU(const Eigen::MatrixXd& mat1, const Eigen::MatrixXd& mat2, Eigen::MatrixXd& result);
 __global__ void calculateSumCost(double* y,double* y_hat);
 double* hotEncodeYMatrix(double* labels,int size);
+double* vectorAddMatrix(double* mat,double* vec,int sizeVec,int rows,int cols);
+__global__ void vectorAddMatrixKernel(double* mat,double* vec,double* mat_result,int sizeVec,int rows,int cols);
 __global__ void applyHotEncodeToMatrix(double* mat,double* mat_result,int size);
 
 
@@ -53,10 +60,13 @@ class GPUMatrix
         int getRows();
         int getCols();
         void printMat();
-        void transpose();
+        GPUMatrix transpose();
+        GPUMatrix sigmoidDeriviative();
         void init();
         void initZero();
         GPUMatrix sigmoid();
+        GPUMatrix hadamardMultiplication(GPUMatrix& other);
         void softmax();
+        void addVectorColwise(GPUMatrix &other);
 };
 #endif

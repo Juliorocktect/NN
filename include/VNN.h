@@ -159,6 +159,10 @@ class NNG
         void setLabels(double* labels);
         void forwardProp();
         void backpropagateOutputLayer();
+        void backpropagateThirdLayer();
+        void backpropagateSecondLayer();
+        void backpropagateFirstLayer();
+        void updateWeightsAndBiases();
         void initilizeYMatrix(double* pLabels);
         double sumCrossEntropyLoss();
 };

@@ -29,6 +29,7 @@ target_include_directories(vnn_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 # Executable
 add_executable(main_exec main.cpp)
 
+
 #Set cuda arch for rtx 3060
 set_target_properties(main_exec PROPERTIES
     CUDA_ARCHITECTURES 86
@@ -40,10 +41,12 @@ set_target_properties(main_exec PROPERTIES
 )
 
 
-
+find_package(GTest REQUIRED)
+add_executable(test tests/test_main.cpp)
 #Link CUDA to project
 target_link_libraries(main_exec PRIVATE CUDA::cudart)
 target_link_libraries(MATHS PRIVATE CUDA::cudart)
+target_link_libraries(test PRIVATE CUDA::cudart)
 # Link die Bibliothek mit dem Executable
 target_link_libraries(main_exec PRIVATE MATHS)
 target_link_libraries(vnn_lib PRIVATE MATHS)
@@ -56,4 +59,7 @@ target_link_libraries(main_exec PRIVATE SDL3::SDL3)
 target_link_libraries(MATHS PRIVATE Eigen3::Eigen)
 target_link_libraries(vnn_lib PRIVATE SDL3::SDL3)
 target_link_libraries(vnn_lib PRIVATE Eigen3::Eigen)
+target_link_libraries(test PRIVATE Eigen3::Eigen)
+target_link_libraries(test PRIVATE GTest::gtest GTest::gtest_main)
+target_link_libraries(test PRIVATE MATHS)
 #link eigen to targete

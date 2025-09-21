@@ -15,6 +15,7 @@ int main(int argc, char const *argv[])
     n->setInputData(ImagePreProcessor::loadImages());
     n->forwardProp();
     n->backpropagateOutputLayer();
+    n->backpropagateThirdLayer();
 
     /* GPUMatrix m1(3,2);
     Eigen::MatrixXd mat1(3,2);

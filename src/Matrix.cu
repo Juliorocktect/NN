@@ -177,7 +177,7 @@ double* executeMatrixAdditionKernel(const double* mat1,const double* mat2,const 
     cudaMemcpy(d_mat2,mat2,sizeMat,cudaMemcpyHostToDevice);
 
 
-    int threadsPerBlock = 256;
+    int threadsPerBlock = 512;
     int blocksPerGrid = (sizeMat + threadsPerBlock -1)/threadsPerBlock;
     
     MatrixAdd<<<blocksPerGrid,threadsPerBlock>>>(d_mat1,d_mat2,d_matResult,sizeMat);
@@ -399,4 +399,105 @@ __device__ double costF(double* vec1,double* vec2,int sizeVec1)//Labels einzeoln
             return -log(vec2[i]);
         }
     }
+}
+__global__ void vectorAddMatrixKernel(double* mat,double* vec,double* mat_result,int sizeVec,int rows,int cols)
+{
+    int row = threadIdx.x;
+    int col = blockIdx.x;
+    if (row< rows && col < cols)
+    {
+        mat_result[row*cols + col] = mat[row*cols +col] + vec[row];
+    }
+}
+double* vectorAddMatrix(double* mat,double* vec,int sizeVec,int rows,int cols)
+{
+    double* d_mat;
+    double* d_mat_result;
+    double* d_vec;
+    size_t sizeMat = rows*cols*sizeof(double);
+    size_t sizeTVec = sizeVec*sizeof(double);
+    double* h_mat_result = new double[rows*cols];
+    cudaMalloc((void**)&d_mat,sizeMat);
+    cudaMalloc((void**)&d_mat_result,sizeMat);
+    cudaMalloc((void**)&d_vec,sizeTVec);
+    cudaMemcpy(d_mat,mat,sizeMat,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_vec,vec,sizeTVec,cudaMemcpyHostToDevice);
+    dim3 grid(cols);
+    dim3 block(rows);
+    vectorAddMatrixKernel<<<grid,block>>>(d_mat,d_vec,d_mat_result,sizeVec,rows,cols);
+    cudaMemcpy(h_mat_result,d_mat_result,sizeMat,cudaMemcpyDeviceToHost);
+    cudaFree(d_mat);
+    cudaFree(d_mat_result);
+    cudaFree(d_vec);
+    return h_mat_result;
+}
+double* matrixSub(double* mat,double* mat2, int rows1,int cols1,int rows2,int cols2)
+{
+    if (rows1 != rows2 || cols1 != cols2)
+    {
+        std::cerr << "Matrixsubtraktion nicht möglich, falsche Dimensionen!" << std::endl;
+        return nullptr;
+    }
+    double* d_mat1;
+    double* d_mat2;
+    double* d_mat_result;
+    size_t sizeMat = rows1*cols1*sizeof(double);
+    cudaMalloc((void**)&d_mat1,sizeMat);
+    cudaMalloc((void**)&d_mat2,sizeMat);
+    cudaMalloc((void**)&d_mat_result,sizeMat);
+    cudaMemcpy(d_mat1,mat,sizeMat,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_mat2,mat2,sizeMat,cudaMemcpyHostToDevice);
+    dim3 grid(cols1);
+    dim3 block(rows1);
+    matrixSubKernel<<<grid,block>>>(d_mat1,d_mat2,d_mat_result,rows1,cols1);
+    double* h_res = new double[rows1*cols1];
+    cudaMemcpy(h_res,d_mat_result,sizeMat,cudaMemcpyDeviceToHost);
+    cudaFree(d_mat1);
+    cudaFree(d_mat2);
+    cudaFree(d_mat_result);
+    return h_res;
+}
+__global__ void matrixSubKernel(double* mat1,double* mat2,double* matRes,int cols,int rows)
+{
+    int row = threadIdx.x;
+    int col = blockIdx.x;
+    if (row< rows && col < cols)
+    {
+        matRes[row*cols + col] = mat1[row*cols +col] - mat2[row*cols +col];
+    }
+}
+__global__ void hadamardKernel(double* mat1,double* mat2,double* mat_result,int rows,int cols)
+{
+    int row = threadIdx.x;
+    int col = blockIdx.x;
+    if (row< rows && col < cols)
+    {
+        mat_result[row*cols + col] = mat1[row*cols +col] * mat2[row*cols +col];
+    }
+}
+double* executeHadamardKernel(double* mat,double* mat2,int row1,int col1,int row2,int col2)
+{
+        if (row1 != row2 || col1 != col2)
+    {
+        std::cerr << "Matrixsubtraktion nicht möglich, falsche Dimensionen!" << std::endl;
+        return nullptr;
+    }
+    double* d_mat1;
+    double* d_mat2;
+    double* d_mat_result;
+    size_t sizeMat = row1*col1*sizeof(double);
+    cudaMalloc((void**)&d_mat1,sizeMat);
+    cudaMalloc((void**)&d_mat2,sizeMat);
+    cudaMalloc((void**)&d_mat_result,sizeMat);
+    cudaMemcpy(d_mat1,mat,sizeMat,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_mat2,mat2,sizeMat,cudaMemcpyHostToDevice);
+    dim3 grid(col1);
+    dim3 block(row1);
+    hadamardKernel<<<grid,block>>>(d_mat1,d_mat2,d_mat_result,row1,col1);
+    double* h_res = new double[row1*col1];
+    cudaMemcpy(h_res,d_mat_result,sizeMat,cudaMemcpyDeviceToHost);
+    cudaFree(d_mat1);
+    cudaFree(d_mat2);
+    cudaFree(d_mat_result);
+    return h_res;
 }

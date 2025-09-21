@@ -15,7 +15,7 @@ void NN::backpropagateThirdLayer()
 {
     printGreen("Starte Ableitung Layer 3");
     Eigen::MatrixXd dA3 = w4.transpose().eval() * dE_dYHAT;
-    dYHAT_dZ3 = dA3.array() * Z3.unaryExpr([this](double x){return sigmoidDeriviative(x);}).eval().array();//Elementweise Multiplikation?
+    dYHAT_dZ3 = dA3.array() * Z3.unaryExpr([this](double x){return sigmoidDeriviative(x);}).eval().array();//Elementweise Multiplikation?Hadamard-Produkt
     dW3 = (dYHAT_dZ3 * Z2.transpose().eval()) / SIZE_TRAINING_DATA; // Muss ich Z2 durch A2 ersetzen, weil Z2 aktiviert wurde? //TODO: ja muss ich noch machen
     db3 = dYHAT_dZ3.rowwise().mean(); //bias durchschnitt Gradient
     printGreen("Layer 3 derived");

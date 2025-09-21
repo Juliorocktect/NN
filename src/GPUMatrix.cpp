@@ -45,10 +45,10 @@ GPUMatrix GPUMatrix::operator*(GPUMatrix& other)
 
 GPUMatrix GPUMatrix::operator+(GPUMatrix &other)
 {
-    double* result_data = executeMatrixAdditionKernel(matrix,other.matrix,rows,cols,other.rows,other.cols);
-    GPUMatrix result(rows, other.cols);
-    result.matrix = result_data;
-    return result;
+        double* result_data = executeMatrixAdditionKernel(matrix,other.matrix,rows,cols,other.rows,other.cols);
+        GPUMatrix result(rows, other.cols);
+        result.matrix = result_data;
+        return result;  
 }
 GPUMatrix& GPUMatrix::operator=(const GPUMatrix& other)
 {
@@ -64,13 +64,19 @@ GPUMatrix& GPUMatrix::operator=(const GPUMatrix& other)
     }
     return *this;
 }
-void GPUMatrix::transpose()
+GPUMatrix GPUMatrix::operator-(const GPUMatrix& other)
+{
+        double* result_data = matrixSub(matrix,other.matrix,rows,cols,other.rows,other.cols);
+        GPUMatrix result(rows, other.cols);
+        result.matrix = result_data;
+        return result;  
+}
+GPUMatrix GPUMatrix::transpose()
 {
     double* res = executeMatrixTransposition(matrix,rows,cols);
-    matrix = res;
-    int tmp = rows;
-    rows = cols;
-    cols = tmp;
+    GPUMatrix m(cols,rows);
+    m.matrix = res;
+    return m;
 }
 void GPUMatrix::init()
 {
@@ -82,6 +88,13 @@ void GPUMatrix::init()
     {
         matrix[i] = dis(gen);
     }
+}
+GPUMatrix GPUMatrix::sigmoidDeriviative()
+{
+    double* res = executeSigmoidDeriviativeKernel(matrix,rows,cols);
+    GPUMatrix m(rows,cols);
+    m.matrix = res;
+    return m;
 }
 void GPUMatrix::initZero()
 {
@@ -96,4 +109,19 @@ GPUMatrix GPUMatrix::sigmoid()
 void GPUMatrix::softmax()
 {
     matrix = execcuteSoftMaxKernel(matrix,rows,cols);
+}
+void GPUMatrix::addVectorColwise(GPUMatrix &other)
+{
+    if (rows == other.cols && other.rows == 1)
+    {
+        double* result = vectorAddMatrix(matrix,other.matrix,other.cols,rows,cols);
+        matrix = result;
+    }
+}
+GPUMatrix GPUMatrix::hadamardMultiplication(GPUMatrix& other)
+{
+    double* res = executeHadamardKernel(matrix,other.matrix,rows,cols,other.rows,other.cols);
+    GPUMatrix m(rows,cols);
+    m.matrix = res;
+    return m;
 }
