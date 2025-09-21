@@ -1,9 +1,9 @@
 #include "Maths.h"
 
-GPUMatrix::GPUMatrix(int rows,int cols)
+GPUMatrix::GPUMatrix(int pRows,int pCols)
 {
-    this->rows = rows;
-    this->cols = cols;
+    rows = pRows;
+    cols = pCols;
     matrix = new double[(rows*cols)];
 }
 
@@ -12,7 +12,7 @@ GPUMatrix::GPUMatrix()
 }
 GPUMatrix::~GPUMatrix()
 {
-
+    delete[] matrix;
 }
 int GPUMatrix::getCols()
 {
@@ -50,11 +50,17 @@ GPUMatrix GPUMatrix::operator+(GPUMatrix &other)
     result.matrix = result_data;
     return result;
 }
-GPUMatrix& GPUMatrix::operator=(const GPUMatrix& other)//Man muss hier die Inhalte kopieren unlogisch aber ok
+GPUMatrix& GPUMatrix::operator=(const GPUMatrix& other)
 {
     if (this != &other)
     {
-        this->matrix = other.matrix;
+        // Speicher ggf. freigeben
+        delete[] matrix;
+        // Speicher neu allokieren
+        rows = other.rows;
+        cols = other.cols;
+        matrix = new double[rows * cols];
+        std::copy(other.matrix, other.matrix + rows * cols, matrix);
     }
     return *this;
 }

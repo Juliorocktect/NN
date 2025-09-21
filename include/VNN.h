@@ -115,7 +115,7 @@ class NNG
     private:
         void printGreen(const char* text);
         void printRed(const char* text);    
-
+        double costF();
 
         GPUMatrix inputData;//784xSIZE_TRAINING_DATA
         //Weights
@@ -151,12 +151,15 @@ class NNG
         GPUMatrix dW2; // Derivation of weights Layer 2 200x480
         GPUMatrix dW3; // Derivation of weights Layer 3 180x200
         GPUMatrix dW4; // Derivation of weights Output Layer 4 10x180
+        double* labels;
     public:
         NNG();
         ~NNG();
         void setInputData(double* mat);
+        void setLabels(double* labels);
         void forwardProp();
-        void backpropagateOutputLayer(); 
-
+        void backpropagateOutputLayer();
+        void initilizeYMatrix(double* pLabels);
+        double sumCrossEntropyLoss();
 };
 #endif

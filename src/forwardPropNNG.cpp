@@ -3,6 +3,7 @@
 void NNG::forwardProp()
 {
     //Layer 1 Calc
+    std::cout << w1.rows << "\t" << w1.cols<<"\n";
     printGreen("Start Calc");
     Z1 = (w1 * inputData) + b1;//+ finished implementing?
     A1 = Z1.sigmoid();
@@ -19,7 +20,9 @@ void NNG::forwardProp()
     printGreen("Layer 3 Passed");
 
     //Output Layer Calc
+    std::cout << y_hat.rows << "\t" << y_hat.cols<<"\n";
     y_hat = (w4* Z3) + b4;
-    y_hat.softmax();
+    //y_hat.softmax();
+    std::cout << y_hat.rows << "\t" << y_hat.cols<<"\n";
     printGreen("Output Layer Passed");
 }

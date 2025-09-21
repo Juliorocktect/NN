@@ -10,9 +10,11 @@
 int main(int argc, char const *argv[])
 {
     NNG *n  = new NNG();
+    double* labels = ImagePreProcessor::readLabelsAsDouble();
+    n->initilizeYMatrix(labels);
     n->setInputData(ImagePreProcessor::loadImages());
     n->forwardProp();
-    
+    n->backpropagateOutputLayer();
 
     /* GPUMatrix m1(3,2);
     Eigen::MatrixXd mat1(3,2);

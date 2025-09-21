@@ -10,6 +10,7 @@
 //TODO: Store Matrix on Graphicscard
 __device__ double sigmoid(double x);
 __device__ double meanPerVector(double* vec);
+__device__ double costF(double* vec1,double* vec2,int sizeVec1);
 __global__ void applyVecSoftMaxKernel(const double* mat,double* matResult,int rows1,int cols1);
 __global__ void meanMatrixKernel(const double* mat,double* resultMatrix,int rows, int cols);
 __global__ void applySigmoidDeriviative(const double* mat1,double* mat_result,int size);
@@ -27,6 +28,10 @@ double* executeMatrixMultiplicationKernel(const double* mat1,const double* mat2,
 double* executeMatrixAdditionKernel(const double* mat1,const double* mat2,const int rows1,const int cols1,int rows2,int cols2);
 double* executeMatrixTransposition(const double* mat1,int rows,int cols);
 void matrixMultiplicationCPU(const Eigen::MatrixXd& mat1, const Eigen::MatrixXd& mat2, Eigen::MatrixXd& result);
+__global__ void calculateSumCost(double* y,double* y_hat);
+double* hotEncodeYMatrix(double* labels,int size);
+__global__ void applyHotEncodeToMatrix(double* mat,double* mat_result,int size);
+
 
 //TODO: implement elementweeise operationen sigmoid deriviative
 // alles ohne Eigen schreiben
@@ -36,9 +41,10 @@ class GPUMatrix
         GPUMatrix& cudaMultiplication();
     public:
         double* matrix;//muss als row-major gespeichert werden
-        int rows,cols;
+        int rows;
+        int cols;
         GPUMatrix();
-        GPUMatrix(int rows,int cols);
+        GPUMatrix(int pRows,int pCols);
         ~GPUMatrix();
         GPUMatrix& operator=(const GPUMatrix& other);// = Operator
         GPUMatrix operator+(GPUMatrix& other);
