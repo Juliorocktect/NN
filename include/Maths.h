@@ -35,13 +35,18 @@ double* executeMatrixTransposition(const double* mat1,int rows,int cols);
 void matrixMultiplicationCPU(const Eigen::MatrixXd& mat1, const Eigen::MatrixXd& mat2, Eigen::MatrixXd& result);
 __global__ void calculateSumCost(double* y,double* y_hat);
 double* hotEncodeYMatrix(double* labels,int size);
+__global__ void vectorSubKernel(const double* vec1, const double* vec2, double* vecRes, int size);
+double* executeVecSubKernel(double* vec1,double* vec2,int size);
 double* vectorAddMatrix(double* mat,double* vec,int sizeVec,int rows,int cols);
 __global__ void vectorAddMatrixKernel(double* mat,double* vec,double* mat_result,int sizeVec,int rows,int cols);
 __global__ void applyHotEncodeToMatrix(double* mat,double* mat_result,int size);
+__global__ void applyMatrixDivision(double* mat,double* mat_result,double div,int rows,int cols);
+double* executeMatrixDivision(double* mat1, double dividend,int rows,int cols);
+double* calcMeanFromMatrix(double* mat,int rows,int cols);
+__global__ void singleVMatrixMultiplyKernel(double* mat,double* mat_res,double v,int rows,int cols);
+double* executeSingleVMatrixMultiplication(double* mat,double v, int rows,int cols);
+__global__ void meanPerRowKernel(const double* mat, double* vec, int rows, int cols);
 
-
-//TODO: implement elementweeise operationen sigmoid deriviative
-// alles ohne Eigen schreiben
 class GPUMatrix
 {
     private:
@@ -57,6 +62,7 @@ class GPUMatrix
         GPUMatrix operator+(GPUMatrix& other);
         GPUMatrix operator-(const GPUMatrix& other);
         GPUMatrix operator*(GPUMatrix& other);
+        GPUMatrix operator/(double v);
         int getRows();
         int getCols();
         void printMat();
@@ -68,5 +74,8 @@ class GPUMatrix
         GPUMatrix hadamardMultiplication(GPUMatrix& other);
         void softmax();
         void addVectorColwise(GPUMatrix &other);
+        GPUMatrix calcMeanFromMatrixRowise();
+        GPUMatrix multiplicationSingleV(double v);
+        GPUMatrix vectorSub(GPUMatrix other);
 };
 #endif

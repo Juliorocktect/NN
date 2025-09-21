@@ -107,3 +107,45 @@ TEST(MatrixTest, testHadamardMultiplication)
 
     delete[] result;
 }
+TEST(MatrixTest, testMatrixDivision)
+{
+    double mat1[] = {2.0, 4.0, 6.0,
+                     8.0, 10.0, 12.0,
+                     14.0, 16.0, 18.0};
+    int rows = 3, cols = 3;
+    double dividend = 2.0;
+    double* result = executeMatrixDivision(mat1, dividend, rows, cols);
+
+    double expected[] = {
+        2.0 / 2.0, 4.0 / 2.0, 6.0 / 2.0,
+        8.0 / 2.0, 10.0 / 2.0, 12.0 / 2.0,
+        14.0 / 2.0, 16.0 / 2.0, 18.0 / 2.0
+    };
+
+    for (int i = 0; i < 9; ++i) {
+        EXPECT_NEAR(result[i], expected[i], 1e-6);
+    }
+
+    delete[] result;
+}
+TEST(MatrixTest, testSingleVMatrixMultiplication)
+{
+    double mat[] = {1.0, 2.0, 3.0,
+                    4.0, 5.0, 6.0,
+                    7.0, 8.0, 9.0};
+    int rows = 3, cols = 3;
+    double v = 2.5;
+    double* result = executeSingleVMatrixMultiplication(mat, v, rows, cols);
+
+    double expected[] = {
+        1.0 * 2.5, 2.0 * 2.5, 3.0 * 2.5,
+        4.0 * 2.5, 5.0 * 2.5, 6.0 * 2.5,
+        7.0 * 2.5, 8.0 * 2.5, 9.0 * 2.5
+    };
+
+    for (int i = 0; i < 9; ++i) {
+        EXPECT_NEAR(result[i], expected[i], 1e-6);
+    }
+
+    delete[] result;
+}

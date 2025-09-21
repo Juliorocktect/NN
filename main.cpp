@@ -13,9 +13,16 @@ int main(int argc, char const *argv[])
     double* labels = ImagePreProcessor::readLabelsAsDouble();
     n->initilizeYMatrix(labels);
     n->setInputData(ImagePreProcessor::loadImages());
-    n->forwardProp();
-    n->backpropagateOutputLayer();
-    n->backpropagateThirdLayer();
+    for (int i = 0; i < 400;i++)
+    {
+        n->forwardProp();
+        n->backpropagateOutputLayer();
+        n->backpropagateThirdLayer();
+        n->backpropagateSecondLayer();
+        n->backpropagateFirstLayer();
+        n->updateWeightsAndBiases();
+    }
+
 
     /* GPUMatrix m1(3,2);
     Eigen::MatrixXd mat1(3,2);

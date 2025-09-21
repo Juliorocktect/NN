@@ -125,3 +125,31 @@ GPUMatrix GPUMatrix::hadamardMultiplication(GPUMatrix& other)
     m.matrix = res;
     return m;
 }
+GPUMatrix GPUMatrix::operator/(double v)
+{
+    double* res = executeMatrixDivision(matrix,v,rows,cols);
+    GPUMatrix m(rows,cols);
+    m.matrix = res;
+    return m;
+}
+GPUMatrix GPUMatrix::calcMeanFromMatrixRowise()
+{
+    double* res = executeMeanMatrixKernel(matrix,rows,cols);
+    GPUMatrix m(rows,cols);
+    m.matrix = res;
+    return m;
+}
+GPUMatrix GPUMatrix::multiplicationSingleV(double v)
+{
+    double* res = executeSingleVMatrixMultiplication(matrix,v,rows,cols);
+    GPUMatrix m(rows,cols);
+    m.matrix = res;
+    return m;
+}
+GPUMatrix GPUMatrix::vectorSub(GPUMatrix other)//Versichert nicht das es kein vektor ist:)
+{
+    double* res = executeVecSubKernel(matrix,other.matrix,rows*cols);
+    GPUMatrix m(rows,cols);
+    m.matrix = res;
+    return m;
+}

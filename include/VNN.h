@@ -10,7 +10,7 @@ const int SIZE_INPUT_LAYER = 784;
 const int SIZE_FIRST_LAYER = 480;
 const int SIZE_SECOND_LAYER = 200;
 const int SIZE_THIRD_LAYER = 180;
-const int SIZE_TRAINING_DATA = 20000;
+const int SIZE_TRAINING_DATA = 40000;
 const double LEARNING_RATE = 0.03;
 
 double sigmoid(double x);

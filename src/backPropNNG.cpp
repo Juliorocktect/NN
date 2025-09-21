@@ -3,7 +3,6 @@
 void NNG::backpropagateOutputLayer()
 {
     printGreen("Starte BackProp");
-    std::cout << y_hat.matrix[5*10+19000];
     //double e = sumCrossEntropyLoss();
     //std::cout << e << std::endl;
     dE_dYHAT = y_hat - y;
@@ -17,8 +16,50 @@ void NNG::backpropagateThirdLayer()
     printGreen("Starte Ableitung Layer 3");
     GPUMatrix w4_t = w4.transpose();//180x10
     GPUMatrix dA3 =  w4_t * dE_dYHAT;//10x10
-    Z3 = Z3.sigmoidDeriviative();
-    dYHAT_dZ3 = dA3.hadamardMultiplication(Z3);
-    //dW3 = dYHAT_dZ3 * Z2.transpose() / SIZE_TRAINING_DATA;
+    dYHAT_dZ3 = Z3.sigmoidDeriviative();
+    dYHAT_dZ3 = dA3.hadamardMultiplication(dYHAT_dZ3);
+    GPUMatrix Z2_t = Z2.transpose();
+    dW3 = (dYHAT_dZ3 * Z2_t) / SIZE_TRAINING_DATA;
+    db3 = dYHAT_dZ3.calcMeanFromMatrixRowise();
     printGreen("Layer 3 derived");
+}
+
+void NNG::backpropagateSecondLayer()
+{
+    printGreen("Starte Ableitung Layer 2");
+    GPUMatrix w3_t = w3.transpose();
+    GPUMatrix dA2 = w3_t * dYHAT_dZ3;
+    dZ2 = Z2.sigmoidDeriviative();
+    dZ2 = dA2.hadamardMultiplication(dZ2);
+    GPUMatrix Z1_t = Z1.transpose();
+    dW2 = (dZ2 * Z1_t)/SIZE_TRAINING_DATA;
+    db2 = dZ2.calcMeanFromMatrixRowise();
+    printGreen("Layer 2 derived");
+}
+void NNG::backpropagateFirstLayer()
+{
+    printGreen("Starte Ableitung Layer 1");
+    GPUMatrix w2_t = w2.transpose();
+    GPUMatrix dA1 = w2_t * dZ2;
+    GPUMatrix dZ1 = Z1.sigmoidDeriviative();
+    dZ1 = dA1.hadamardMultiplication(dZ1);
+    GPUMatrix input_t = inputData.transpose();
+    dW1 = (dZ1 * input_t)/SIZE_TRAINING_DATA;
+    db1 = dZ1.calcMeanFromMatrixRowise();
+    printGreen("Layer 1 derived");
+}
+void NNG::updateWeightsAndBiases()
+{
+    printGreen("Updating Weights");
+    //Update weights
+    w4 = w4 - dW4.multiplicationSingleV(LEARNING_RATE);
+    w3 = w3 - dW3.multiplicationSingleV(LEARNING_RATE);
+    w2 = w2 - dW2.multiplicationSingleV(LEARNING_RATE);
+    w1 = w1 - dW1.multiplicationSingleV(LEARNING_RATE);
+    printGreen("Updating Biases");
+    //update biases
+    b4 = b4.vectorSub(db4.multiplicationSingleV(LEARNING_RATE));
+    b3 = b3.vectorSub(db3.multiplicationSingleV(LEARNING_RATE));
+    b2 = b2.vectorSub(db2.multiplicationSingleV(LEARNING_RATE));
+    b1 = b1.vectorSub(db1.multiplicationSingleV(LEARNING_RATE));
 }

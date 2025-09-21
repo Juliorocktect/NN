@@ -281,15 +281,15 @@ double* executeMeanMatrixKernel(double* mat,int rows,int cols)
 }
 __global__ void meanMatrixKernel(const double* mat,double* resultMatrix,int rows, int cols)
 {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if ((rows*cols) < idx)
+    int row = blockIdx.x * blockDim.x + threadIdx.x;
+    if (row < rows)
     {
-        double sum  = 0.0;
-        for (int i  = 0;i < cols;i++)
+        double sum = 0.0;
+        for (int col = 0; col < cols; ++col)
         {
-            sum += mat[idx +i ];
+            sum += mat[row * cols + col];
         }
-        resultMatrix[idx] = sum;
+        resultMatrix[row] = sum / cols;
     }
 }
 __global__ void applyVecSoftMaxKernel(const double* mat, double* matResult, int rows, int cols)
@@ -466,6 +466,14 @@ __global__ void matrixSubKernel(double* mat1,double* mat2,double* matRes,int col
         matRes[row*cols + col] = mat1[row*cols +col] - mat2[row*cols +col];
     }
 }
+__global__ void vectorSubKernel(const double* vec1, const double* vec2, double* vecRes, int size)
+{
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < size)
+    {
+        vecRes[idx] = vec1[idx] - vec2[idx];
+    }
+}
 __global__ void hadamardKernel(double* mat1,double* mat2,double* mat_result,int rows,int cols)
 {
     int row = threadIdx.x;
@@ -500,4 +508,104 @@ double* executeHadamardKernel(double* mat,double* mat2,int row1,int col1,int row
     cudaFree(d_mat2);
     cudaFree(d_mat_result);
     return h_res;
+}
+double* executeMatrixDivision(double* mat1, double dividend,int rows,int cols)
+{
+        double* d_mat1;
+    double* d_mat_result;
+    size_t sizeMat = rows*cols*sizeof(double);
+    cudaMalloc((void**)&d_mat1,sizeMat);
+    cudaMalloc((void**)&d_mat_result,sizeMat);
+    cudaMemcpy(d_mat1,mat1,sizeMat,cudaMemcpyHostToDevice);
+    dim3 grid(cols);
+    dim3 block(rows);
+    applyMatrixDivision<<<grid,block>>>(d_mat1,d_mat_result,dividend,rows,cols);
+    double* h_res = new double[rows*cols];
+    cudaMemcpy(h_res,d_mat_result,sizeMat,cudaMemcpyDeviceToHost);
+    cudaFree(d_mat1);
+    cudaFree(d_mat_result);
+    return h_res;
+}
+__global__ void applyMatrixDivision(double* mat,double* mat_result,double div,int rows,int cols)
+{
+    int row = threadIdx.x;
+    int col = blockIdx.x;
+    if (row< rows && col < cols)
+    {
+        mat_result[row*cols + col] = mat[row*cols +col] / div;
+    }
+}
+double* calcMeanFromMatrix(double* mat,int rows,int cols)
+{
+    Eigen::Map<Eigen::MatrixXd> eigenMat(mat, rows, cols);
+    double* vec = new double[rows];
+    Eigen::VectorXd means = eigenMat.rowwise().mean();
+    for (int j = 0; j < rows; ++j) {
+        vec[j] = means(j);
+    }
+    return vec;
+}
+__global__ void singleVMatrixMultiplyKernel(double* mat,double* mat_res,double v,int rows,int cols)
+{
+        int row = threadIdx.x;
+    int col = blockIdx.x;
+    if (row< rows && col < cols)
+    {
+        mat_res[row*cols + col] = mat[row*cols +col] * v;
+    }
+}
+double* executeSingleVMatrixMultiplication(double* mat,double v, int rows,int cols)
+{
+    double* d_mat1;
+    double* d_mat_result;
+    size_t sizeMat = rows*cols*sizeof(double);
+    cudaMalloc((void**)&d_mat1,sizeMat);
+    cudaMalloc((void**)&d_mat_result,sizeMat);
+    cudaMemcpy(d_mat1,mat,sizeMat,cudaMemcpyHostToDevice);
+    dim3 grid(cols);
+    dim3 block(rows);
+    singleVMatrixMultiplyKernel<<<grid,block>>>(d_mat1,d_mat_result,v,rows,cols);
+    double* h_res = new double[rows*cols];
+    cudaMemcpy(h_res,d_mat_result,sizeMat,cudaMemcpyDeviceToHost);
+    cudaFree(d_mat1);
+    cudaFree(d_mat_result);
+    return h_res;
+}
+double* executeVecSubKernel(double* vec1,double* vec2,int size)
+{
+    double* d_vec1;
+    double* d_vec2;
+    double* d_vec_res;
+    double* h_res = new double[size];
+    size_t sizeVec = size*sizeof(double);
+    cudaMalloc((void**)&d_vec1,sizeVec);
+    cudaMalloc((void**)&d_vec2,sizeVec);
+    cudaMalloc((void**)&d_vec_res,sizeVec);
+
+    cudaMemcpy(d_vec1,vec1,sizeVec,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_vec2,vec2,sizeVec,cudaMemcpyHostToDevice);
+
+    int threadsPerBlock = 512;
+    int blocksPerGrid = (size + threadsPerBlock -1)/threadsPerBlock;
+
+    vectorSubKernel<<<threadsPerBlock,blocksPerGrid>>>(d_vec1,d_vec2,d_vec_res,size);
+
+    cudaMemcpy(h_res,d_vec_res,sizeVec,cudaMemcpyDeviceToHost);
+    cudaFree(d_vec1);
+    cudaFree(d_vec2);
+    cudaFree(d_vec_res);
+    return h_res;
+}
+__global__ void meanPerRowKernel(const double* mat, double* vec, int rows, int cols)
+{
+    int row = blockIdx.x * blockDim.x + threadIdx.x;
+    if (row < rows)
+    {
+        double sum = 0.0;
+        for (int col = 0; col < cols; ++col)
+        {
+            sum += mat[row * cols + col];
+        }
+        vec[row] = sum / cols;
+    }
 }
