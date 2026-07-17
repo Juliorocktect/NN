@@ -10,10 +10,13 @@
 int main(int argc, char const *argv[])
 {
     NNG *n  = new NNG();
-    double* labels = ImagePreProcessor::readLabelsAsDouble();
+    std::vector<double> lbl = ImagePreProcessor::readLabelsAsDouble();
+    double* labels = ImagePreProcessor::readLabelsAsDouble().data();
+    std::cout << labels[9023] << std::endl;
+
     n->initilizeYMatrix(labels);
     n->setInputData(ImagePreProcessor::loadImages());
-    for (int i = 0; i < 400;i++)
+    for (int i = 0; i < 15;i++)
     {
         n->forwardProp();
         n->backpropagateOutputLayer();
@@ -22,6 +25,8 @@ int main(int argc, char const *argv[])
         n->backpropagateFirstLayer();
         n->updateWeightsAndBiases();
     }
+    int c = n->calcAccuracy(ImagePreProcessor::loadImages());
+    std::cout << (double) c/20.000; 
 
 
     /* GPUMatrix m1(3,2);

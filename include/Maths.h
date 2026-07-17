@@ -11,6 +11,7 @@
 __device__ double sigmoid(double x);
 __device__ double meanPerVector(double* vec);
 __device__ double costF(double* vec1,double* vec2,int sizeVec1);
+__global__ void sumCrossEntropyLoss(double* mat,double* sum,int rows,int cols);
 __global__ void applyVecSoftMaxKernel(const double* mat,double* matResult,int rows1,int cols1);
 __global__ void meanMatrixKernel(const double* mat,double* resultMatrix,int rows, int cols);
 __global__ void hadamardKernel(double* mat1,double* mat2,double* mat_result,int rows,int cols);
@@ -46,6 +47,10 @@ double* calcMeanFromMatrix(double* mat,int rows,int cols);
 __global__ void singleVMatrixMultiplyKernel(double* mat,double* mat_res,double v,int rows,int cols);
 double* executeSingleVMatrixMultiplication(double* mat,double v, int rows,int cols);
 __global__ void meanPerRowKernel(const double* mat, double* vec, int rows, int cols);
+__global__ void crossEntropyLossKernel(const double* y_hat, const double* labels, double* loss, int numSamples);
+double executeCrossEntropyLoss(const double* y_hat, const double* labels, int numSamples);
+double* executeArgmaxKernel(const double* mat,int rows, int cols);
+__global__ void argmaxKernel(const double* mat,double* mat_result,int rows,int cols);
 
 class GPUMatrix
 {

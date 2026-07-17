@@ -59,7 +59,7 @@ void NNG::printRed(const char* text)
 }
 void NNG::initilizeYMatrix(double* pLabels)
 {
-    this->labels = labels; 
+    this->labels = pLabels;
     y = GPUMatrix(10,SIZE_TRAINING_DATA);
     y.matrix = hotEncodeYMatrix(pLabels,SIZE_TRAINING_DATA);
 }
@@ -70,16 +70,65 @@ void NNG::setLabels(double* labels)
 
 double NNG::sumCrossEntropyLoss()
 {
-    double sum = 0.0;
-    for (size_t i = 0;i < SIZE_TRAINING_DATA;i++)   
+    return executeCrossEntropyLoss(y_hat.matrix,labels,SIZE_TRAINING_DATA);
+}
+int NNG::argmax(const double* vec, int size)
+{
+    int maxIdx = 0;
+    double maxVal = vec[0];
+    for (int i = 1; i < size; ++i)
     {
-        //sum += crossEntropyLoss(y_hat.col(i),labels[i]); // non quadratic
-        int label = static_cast<int>(labels[i]);
-        if (label < 0 || label >= 10) 
+        if (vec[i] > maxVal)
         {
-            sum += -std::log(y_hat.matrix[i * 10 + label]);
+            maxVal = vec[i];
+            maxIdx = i;
         }
-        //10xSIZE_TRAINIG_DATA
     }
-    return sum/SIZE_TRAINING_DATA;
+    return maxIdx;
+}
+int NNG::calcAccuracy(double* inputData)
+{
+    int sizeUnusedImages = 60000 - SIZE_TRAINING_DATA;
+    GPUMatrix unusedImaged(784,sizeUnusedImages);
+    double m[sizeUnusedImages];
+    std::copy(inputData+SIZE_TRAINING_DATA,inputData+60000,m); // copy images from files into matrix
+    unusedImaged.matrix = m;
+    std::cout << "Executed copy of Matrix\n";
+    // Feed Through net
+    Z1 = (w1 * unusedImaged);
+    Z1.addVectorColwise(b1);//+ finished implementing?
+    A1 = Z1.sigmoid();
+    //printGreen("Layer 1 Passed");
+
+    //Layer 2 Calc
+    Z2 = (w2 * Z1);
+    Z2.addVectorColwise(b2);
+    A2 = Z2.sigmoid();
+    //printGreen("Layer 2 Passed");
+
+    //Layer 3 Calc
+    Z3 = (w3*Z2);
+    Z3.addVectorColwise(Z3);
+    A3 = Z3.sigmoid();
+    //printGreen("Layer 3 Passed");
+    //Output Layer Calc
+    y_hat = (w4* Z3);
+    y_hat.addVectorColwise(b4)
+    y_hat.softmax();
+    std::cout << "Feed through network\n";
+    //execute Argmax Function
+    double* matRes = new double[sizeUnusedImages]; //Predections of NN per picture
+    matRes = executeArgmaxKernel(y_hat.matrix,y_hat.rows,y_hat.cols);
+    std::cout << "Executed ArgmaxKernel\n";
+    std::cout << matRes[12] << std::endl;
+    std::cout << labels[8756] << std::endl;
+    int correct = 0;
+    for (int i = 0;i< sizeUnusedImages;i++)// Muss GPUOptimiert Werden//TODO:Probleme beim Lesen von labels falscher speicher zugriff
+    {
+        int predicted = matRes[i];
+        int actual = labels[SIZE_TRAINING_DATA +i];
+        if (predicted == actual) correct++;
+    }
+    delete[] matRes;
+    return correct;
 }
