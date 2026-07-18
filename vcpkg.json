@@ -1,0 +1,10 @@
+{
+  "builtin-baseline": "4eb0f7cabb9ca18132d80009312411b9261bba7b",
+  "name": "vnnprojekt",
+  "version": "0.1.0",
+  "dependencies": [
+    "eigen3",
+    "gtest",
+    "sdl3"
+  ]
+}
