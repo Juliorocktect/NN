@@ -149,3 +149,73 @@ TEST(MatrixTest, testSingleVMatrixMultiplication)
 
     delete[] result;
 }
+TEST(MatrixTest, testExecuteSingleVMatrixMultiplication)
+{
+    double mat[] = {1.0, 2.0, 3.0,
+                    4.0, 5.0, 6.0,
+                    7.0, 8.0, 9.0};
+    int rows = 3, cols = 3;
+    double factor = 2.5;
+    double* result = executeSingleVMatrixMultiplication(mat, factor, rows, cols);
+
+    double expected[] = {
+        1.0 * 2.5, 2.0 * 2.5, 3.0 * 2.5,
+        4.0 * 2.5, 5.0 * 2.5, 6.0 * 2.5,
+        7.0 * 2.5, 8.0 * 2.5, 9.0 * 2.5
+    };
+
+    for (int i = 0; i < 9; ++i) {
+        EXPECT_NEAR(result[i], expected[i], 1e-6);
+    }
+
+    delete[] result;
+}
+TEST(hotEncodeTest,testRepeatedLabels)
+{
+    double labels[] = {3, 3, 3, 3};
+    int size = 4;
+
+    double* result = hotEncodeYMatrix(labels, size);
+
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < 10; j++) {
+            assert(result[i * 10 + j] == (j == 3 ? 1.0 : 0.0));
+        }
+    }
+
+    delete[] result;
+}
+TEST(hotEncodeTest,test_all_classes)
+{
+    const int size = 10;
+    double labels[size];
+
+    for (int i = 0; i < size; i++)
+        labels[i] = i;
+
+    double* result = hotEncodeYMatrix(labels, size);
+
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < 10; j++) {
+            assert(result[i * 10 + j] == (i == j ? 1.0 : 0.0));
+        }
+    }
+
+    delete[] result;
+}
+TEST(hotEncodeTest,basicTest)
+{
+    double labels[] = {0, 2, 9};
+    int size = 3;
+
+    double* result = hotEncodeYMatrix(labels, size);
+
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < 10; j++) {
+            double expected = (j == (int)labels[i]) ? 1.0 : 0.0;
+            assert(result[i * 10 + j] == expected);
+        }
+    }
+
+    delete[] result;
+}

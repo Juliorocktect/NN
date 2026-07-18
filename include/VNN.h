@@ -11,7 +11,7 @@ const int SIZE_FIRST_LAYER = 480;
 const int SIZE_SECOND_LAYER = 200;
 const int SIZE_THIRD_LAYER = 180;
 const int SIZE_TRAINING_DATA = 40000;
-const double LEARNING_RATE = 0.03;
+const double LEARNING_RATE = 0.01;
 
 double sigmoid(double x);
 class NN
@@ -151,7 +151,7 @@ class NNG
         GPUMatrix dW2; // Derivation of weights Layer 2 200x480
         GPUMatrix dW3; // Derivation of weights Layer 3 180x200
         GPUMatrix dW4; // Derivation of weights Output Layer 4 10x180
-        double* labels;
+        double* labels;//60.000 labels to the 60.000 images
     public:
         NNG();
         ~NNG();
@@ -165,5 +165,7 @@ class NNG
         void updateWeightsAndBiases();
         void initilizeYMatrix(double* pLabels);
         double sumCrossEntropyLoss();
+        int calcAccuracy(double* inputData);
+        int argmax(const double* vec, int size);
 };
 #endif
