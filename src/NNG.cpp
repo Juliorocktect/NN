@@ -88,7 +88,7 @@ int NNG::argmax(const double* vec, int size)
 }
 int NNG::calcAccuracy(double* inputData)
 {
-    int sizeUnusedImages = 60000 - SIZE_TRAINING_DATA;
+    const int sizeUnusedImages = 60000 - SIZE_TRAINING_DATA;
     GPUMatrix unusedImaged(784,sizeUnusedImages);
     double m[sizeUnusedImages];
     std::copy(inputData+SIZE_TRAINING_DATA,inputData+60000,m); // copy images from files into matrix
@@ -113,7 +113,7 @@ int NNG::calcAccuracy(double* inputData)
     //printGreen("Layer 3 Passed");
     //Output Layer Calc
     y_hat = (w4* Z3);
-    y_hat.addVectorColwise(b4)
+    y_hat.addVectorColwise(b4);
     y_hat.softmax();
     std::cout << "Feed through network\n";
     //execute Argmax Function

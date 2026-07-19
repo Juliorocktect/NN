@@ -4,7 +4,6 @@
 #include <vector>
 #include <stdio.h>
 #include <cuda_runtime.h>
-#include <Eigen/Dense>
 #include <random>
 #include <iostream>
 //TODO: Store Matrix on Graphicscard
@@ -33,7 +32,6 @@ __global__ void matrixMultiplication(const double* mat1, const double* mat2, dou
 double* executeMatrixMultiplicationKernel(const double* mat1,const double* mat2,const int rows1,const int cols1,const int rows2,const int cols2);
 double* executeMatrixAdditionKernel(const double* mat1,const double* mat2,const int rows1,const int cols1,int rows2,int cols2);
 double* executeMatrixTransposition(const double* mat1,int rows,int cols);
-void matrixMultiplicationCPU(const Eigen::MatrixXd& mat1, const Eigen::MatrixXd& mat2, Eigen::MatrixXd& result);
 __global__ void calculateSumCost(double* y,double* y_hat);
 double* hotEncodeYMatrix(double* labels,int size);
 __global__ void vectorSubKernel(const double* vec1, const double* vec2, double* vecRes, int size);
@@ -43,7 +41,6 @@ __global__ void vectorAddMatrixKernel(double* mat,double* vec,double* mat_result
 __global__ void applyHotEncodeToMatrix(double* mat,double* mat_result,int size);
 __global__ void applyMatrixDivision(double* mat,double* mat_result,double div,int rows,int cols);
 double* executeMatrixDivision(double* mat1, double dividend,int rows,int cols);
-double* calcMeanFromMatrix(double* mat,int rows,int cols);
 __global__ void singleVMatrixMultiplyKernel(double* mat,double* mat_res,double v,int rows,int cols);
 double* executeSingleVMatrixMultiplication(double* mat,double v, int rows,int cols);
 __global__ void meanPerRowKernel(const double* mat, double* vec, int rows, int cols);

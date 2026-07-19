@@ -18,7 +18,7 @@ add_library(vnn_lib
     src/backPropNNG.cpp
     src/forwardPropNNG.cpp
     src/NNG.cpp
-    src/VNN.cpp
+    
     src/ImageLoading.cpp
     src/backprop.cpp
     src/forwardProp.cpp
@@ -32,7 +32,7 @@ target_include_directories(vnn_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 add_executable(main_exec main.cpp)
 
 #Set cuda arch for rtx 3060
-set_target_properties(main_exec PROPERTIES
+set_target_properties(MATHS PROPERTIES
     CUDA_ARCHITECTURES 86
 )
 
@@ -52,15 +52,9 @@ target_link_libraries(test PRIVATE CUDA::cudart)
 target_link_libraries(main_exec PRIVATE MATHS)
 target_link_libraries(vnn_lib PRIVATE MATHS)
 target_link_libraries(main_exec PRIVATE vnn_lib)
-find_package(Eigen3 REQUIRED)
 find_package(SDL3 REQUIRED)
 
-target_link_libraries(main_exec PRIVATE Eigen3::Eigen)
 target_link_libraries(main_exec PRIVATE SDL3::SDL3)
-target_link_libraries(MATHS PRIVATE Eigen3::Eigen)
 target_link_libraries(vnn_lib PRIVATE SDL3::SDL3)
-target_link_libraries(vnn_lib PRIVATE Eigen3::Eigen)
-target_link_libraries(test PRIVATE Eigen3::Eigen)
 target_link_libraries(test PRIVATE GTest::gtest GTest::gtest_main)
 target_link_libraries(test PRIVATE MATHS)
-#link eigen to targete

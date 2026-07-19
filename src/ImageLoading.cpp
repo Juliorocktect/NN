@@ -10,7 +10,7 @@ namespace ImagePreProcessor
     }
     double* loadImages()
     {
-        std::ifstream imageFile("/home/julio/Documents/code/VNN/resources/train-images.idx3-ubyte", std::ios::binary);
+        std::ifstream imageFile(IMAGE_PATH, std::ios::binary);
         if (!imageFile) throw std::runtime_error("Unable to open image file");
         int magic = readInt(imageFile);
         if (magic != 2051) throw std::runtime_error("Invalid image file!");
@@ -34,7 +34,7 @@ namespace ImagePreProcessor
     }
     std::vector<std::vector<uint8_t>> readImages()
     {
-        std::ifstream imageFile("/home/julio/Documents/code/VNN/resources/train-images.idx3-ubyte",std::ios::binary);
+        std::ifstream imageFile(IMAGE_PATH, std::ios::binary);
         if (!imageFile) throw std::runtime_error("Unable to open image file");
         int magic = readInt(imageFile);
         if (magic != 2051) throw std::runtime_error("Invalid image file!");
@@ -51,7 +51,7 @@ namespace ImagePreProcessor
     }
     std::vector<uint8_t> readLabels()
     {
-        std::ifstream file("/home/julio/Documents/code/VNN/resources/train-labels.idx1-ubyte", std::ios::binary);
+        std::ifstream file(LABEL_PATH, std::ios::binary);
         if (!file) throw std::runtime_error("Unable to open label file: labels");
 
         int magic = readInt(file);
@@ -66,9 +66,9 @@ namespace ImagePreProcessor
     }
     std::vector<double> readLabelsAsDouble()
     {
-        std::ifstream file("/home/julio/Documents/code/VNN/resources/train-labels.idx1-ubyte", std::ios::binary);
+        std::ifstream file(LABEL_PATH, std::ios::binary);
         if (!file)
-        throw std::runtime_error("Unable to open label file");
+            throw std::runtime_error("Unable to open label file");
 
         int magic = readInt(file);
         if (magic != 2049)

@@ -6,8 +6,8 @@
 #include <iostream>
 #include <vector>
 #include <SDL3/SDL.h>
-#include <Eigen/Dense>
-
+#define IMAGE_PATH "D:/Coding/NN/resources/train-images.idx3-ubyte"
+#define LABEL_PATH "D:/Coding/NN/resources/train-labels.idx1-ubyte"
 
 namespace ImagePreProcessor
 {

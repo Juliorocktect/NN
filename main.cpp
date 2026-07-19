@@ -1,6 +1,5 @@
 #include <VNN.h>
 #include <ImageLoading.h>
-#include <Eigen/Dense>
 #include <vector>
 #include <string>
 #include <Maths.h>
@@ -11,10 +10,9 @@ int main(int argc, char const *argv[])
 {
     NNG *n  = new NNG();
     std::vector<double> lbl = ImagePreProcessor::readLabelsAsDouble();
-    double* labels = ImagePreProcessor::readLabelsAsDouble().data();
-    std::cout << labels[9023] << std::endl;
+    std::cout << lbl.at(9023) << std::endl;
 
-    n->initilizeYMatrix(labels);
+    n->initilizeYMatrix(lbl.data());
     n->setInputData(ImagePreProcessor::loadImages());
     for (int i = 0; i < 15;i++)
     {
@@ -26,34 +24,6 @@ int main(int argc, char const *argv[])
         n->updateWeightsAndBiases();
     }
     int c = n->calcAccuracy(ImagePreProcessor::loadImages());
-    std::cout << (double) c/20.000; 
-
-
-    /* GPUMatrix m1(3,2);
-    Eigen::MatrixXd mat1(3,2);
-    Eigen::MatrixXd mat2(2,3);
-    mat1 << 7,5,98,32,2,8;
-    mat2 << 8,90,3,2,1,9;
-    double data_m1[] = {7,5,98,32,2,8};
-    double data_m2[] = {8,90,3,2,1,9};
-    GPUMatrix m2(2,3);
-    m1.matrix = data_m1;
-    m2.matrix = data_m2;
-    GPUMatrix result = m1*m2;
-    result.printMat();
-    Eigen::MatrixXd  nr = mat1 * mat2;
-    std::cout << "\n";
-    result.transpose();
-    result.printMat();
-    std::cout << nr.transpose().eval() << std::endl;
-    double matrix[9] = {2.5, 1.2, 3.7,
-                        0.9, 4.1, 2.2,
-                        3.3, 0.5, 1.8}; 
-    double* r = execcuteSoftMaxKernel(matrix,3,3);
-    GPUMatrix neu(3,3);
-    std::cout << "\n";
-    neu.matrix = r;
-    neu.printMat(); */
-    
+    std::cout << (double) c/20.000;     
     return 0;
 }

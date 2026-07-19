@@ -1,18 +1,17 @@
 #include "Maths.h"
 
-GPUMatrix::GPUMatrix(int pRows,int pCols)
+GPUMatrix::GPUMatrix(int pRows,int pCols) : matrix(nullptr), rows(pRows), cols(pCols)
 {
-    rows = pRows;
-    cols = pCols;
-    matrix = new double[(rows*cols)];
+    size_t n = static_cast<size_t>(rows) * static_cast<size_t>(cols);
+    matrix = (n > 0) ? new double[n] : nullptr;
 }
 
-GPUMatrix::GPUMatrix()
-{
-}
+GPUMatrix::GPUMatrix() : matrix(nullptr), rows(0), cols(0) {}
+
 GPUMatrix::~GPUMatrix()
 {
     delete[] matrix;
+    matrix = nullptr;
 }
 int GPUMatrix::getCols()
 {
@@ -52,16 +51,24 @@ GPUMatrix GPUMatrix::operator+(GPUMatrix &other)
 }
 GPUMatrix& GPUMatrix::operator=(const GPUMatrix& other)
 {
-    if (this != &other)
-    {
-        // Speicher ggf. freigeben
+    if (this == &other) return *this;
+
+    size_t newTotal = static_cast<size_t>(other.rows) * static_cast<size_t>(other.cols);
+
+    // Reallocate only if size differs
+    size_t curTotal = static_cast<size_t>(rows) * static_cast<size_t>(cols);
+       if (newTotal != curTotal) {
+            matrix = nullptr;
         delete[] matrix;
-        // Speicher neu allokieren
-        rows = other.rows;
-        cols = other.cols;
-        matrix = new double[rows * cols];
-        std::copy(other.matrix, other.matrix + rows * cols, matrix);
+        if (newTotal > 0) matrix = new double[newTotal];
     }
+       //copy matrix pointer
+	   matrix = other.matrix;
+
+    // Copy metadata and contents
+    rows = other.rows;
+    cols = other.cols;
+
     return *this;
 }
 GPUMatrix GPUMatrix::operator-(const GPUMatrix& other)
@@ -80,11 +87,16 @@ GPUMatrix GPUMatrix::transpose()
 }
 void GPUMatrix::init()
 {
+    if (rows <= 0 || cols <= 0) return;
+    size_t total = static_cast<size_t>(rows) * static_cast<size_t>(cols);
+    {
+        if (!matrix) matrix = new double[total];
+    }
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(-0.1, 0.1);
-
-    for (int i = 0; i < rows * cols; ++i)
+    
+    for (size_t i = 0; i < total; ++i)
     {
         matrix[i] = dis(gen);
     }
@@ -98,7 +110,9 @@ GPUMatrix GPUMatrix::sigmoidDeriviative()
 }
 void GPUMatrix::initZero()
 {
-    matrix = {0};
+    size_t total = static_cast<size_t>(rows) * static_cast<size_t>(cols);
+    delete[] matrix;
+    matrix = (total > 0) ? new double[total]() : nullptr;
 }
 GPUMatrix GPUMatrix::sigmoid()
 {

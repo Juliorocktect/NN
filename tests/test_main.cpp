@@ -39,28 +39,6 @@ TEST(MatrixTest, testMatrixTransposition)
 
     delete[] result;
 }
-TEST(MatrixTest, testMatrixMultiplicationCPU)
-{
-    Eigen::MatrixXd mat1(3,3);
-    Eigen::MatrixXd mat2(3,3);
-    mat1 << 1.2, -3.4, 5.6,
-            7.8, -9.1, 0.0,
-            2.3, -4.5, 6.7;
-    mat2 << 3.14, -2.71, 0.577,
-            8.23, -4.56, 1.01,
-            7.77, -9.99, 5.55;
-    Eigen::MatrixXd result;
-    matrixMultiplicationCPU(mat1, mat2, result);
-
-    Eigen::MatrixXd expected(3,3);
-    expected << 19.298, -43.692, 28.338,
-                -50.401, 20.358, -4.690,
-                22.246, -52.646, 33.967;
-
-    for(int i = 0; i < 3; ++i)
-        for(int j = 0; j < 3; ++j)
-            EXPECT_NEAR(result(i,j), expected(i,j), 1e-3);
-}
 TEST(MatrixTest, testMatrixSubtraction)
 {
     double mat1[] = {1.2, -3.4, 5.6,
