@@ -1,21 +1,8 @@
 #include "Maths.h"
 
+double crossEntropyLoss(double *y_hat, uint8_t labels);
 
-double crossEntropyLoss(double* y_hat,uint8_t labels);
-
-
-__device__ double sigmoidDeriviative(double x)
-{
-    double y = sigmoid(x);
-    return y * (1 - y); 
-}
-__device__ double sigmoid(double x){
-    if (x < -100.0) x = -100.0;
-    if (x >  100.0) x =  100.0;
-    return 1.0 / (1.0 + std::exp(-x));
-} 
-
-
+/*
 __global__ void vectorAdd(const double* vec1,const double* vec2,double* vec3,int size)
 {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -106,7 +93,7 @@ double* executeMatrixAdditionKernel(const double* mat1,const double* mat2,const 
 
     int threadsPerBlock = 512;
     int blocksPerGrid = (sizeMat + threadsPerBlock -1)/threadsPerBlock;
-    
+
     MatrixAdd<<<blocksPerGrid,threadsPerBlock>>>(d_mat1,d_mat2,d_matResult,sizeMat);
     cudaDeviceSynchronize();
 
@@ -196,7 +183,7 @@ double* executeMeanMatrixKernel(double* mat,int rows,int cols)
 
     int threadsPerBlock = 256;
     int blocksPerGrid = (n + threadsPerBlock -1)/threadsPerBlock;
-    
+
     meanMatrixKernel<<<threadsPerBlock,blocksPerGrid>>>(d_mat,d_mat_result,rows,cols);
     cudaDeviceSynchronize();
     cudaMemcpy(h_res,d_mat_result,size,cudaMemcpyDeviceToHost);
@@ -223,7 +210,7 @@ __global__ void applyVecSoftMaxKernel(const double* mat, double* matResult, int 
 {
     int col = blockIdx.x;
     int row = threadIdx.x;
-    
+
     if (col < cols && row < rows)
     {
         double max;
@@ -233,14 +220,14 @@ __global__ void applyVecSoftMaxKernel(const double* mat, double* matResult, int 
             if (mat[i*cols+col] > max)
             {
                 max  = mat[i*cols+col];
-            }            
+            }
         }
         //e^(x - max)//Warum darf auf meiner GRAKA kein double benutzen
         __shared__ double sum;
-        if (row == 0) 
+        if (row == 0)
         {
             sum = 0.0;
-            for (int i = 0; i < rows; i++) 
+            for (int i = 0; i < rows; i++)
             {
                 sum += exp(mat[i*cols + col] - max);
             }
@@ -305,12 +292,12 @@ double* hotEncodeYMatrix(double* labels,int size)
 }
 __global__ void applyHotEncodeToMatrix(double* mat,double* mat_result,int size)
 {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;  
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx< size)
     {
         int label = static_cast<int>(mat[idx]);
         if(mat[idx] < 10)
-        {   
+        {
             mat_result[idx * 10 + label] = 1.0;
         }
     }
@@ -561,7 +548,7 @@ double executeCrossEntropyLoss(const double* y_hat, const double* labels, int nu
     double* d_loss;
     size_t sizeYHAT = 10 * numSamples * sizeof(double);
     double* h_loss = new double[numSamples];
-    
+
     cudaMalloc((void**)&d_y_hat,sizeYHAT);
     cudaMalloc((void**)&d_labels,numSamples*sizeof(double));
     cudaMalloc((void**)&d_loss,numSamples*sizeof(double));
@@ -577,7 +564,7 @@ double executeCrossEntropyLoss(const double* y_hat, const double* labels, int nu
     double meanLoss = sum / numSamples;
     delete[] h_loss;
     return meanLoss;
-}   
+}
 double* executeArgmaxKernel(const double* mat,int rows, int cols)
 {
     double* d_mat;
@@ -605,7 +592,7 @@ __global__ void argmaxKernel(const double* mat,double* mat_result,int rows,int c
     int index = 0;
     for (int i = 1; i < rows; i++)
     {
-        
+
         float v = mat[col * rows + i];
         if (v > maxVal)
             maxVal = v;
@@ -614,3 +601,4 @@ __global__ void argmaxKernel(const double* mat,double* mat_result,int rows,int c
 
     mat_result[col] = index;
 }
+*/
