@@ -39,10 +39,10 @@ file(GLOB MODEL_SOURCES
 # Library aus src und include
 add_library(MATHS ${CUDA_SOURCES} ${MODEL_SOURCES})
 add_library(vnn_lib
-    src/backPropNNG.cpp
-    src/forwardPropNNG.cpp
-    src/NNG.cpp
-    src/ImageLoading.cpp
+    src/algorithms/backPropNNG.cpp
+    src/algorithms/forwardPropNNG.cpp
+    src/algorithms/NNG.cpp
+    src/utils/ImageLoading.cpp
 )
 
 target_include_directories(MATHS PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
