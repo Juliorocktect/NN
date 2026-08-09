@@ -1,6 +1,8 @@
 #include "Maths.h"
+#include "CudaKernels.cuh"
+#include "CudaLaunchers.cuh"
 
-__global__ void vectorSubKernel(const double* vec1, const double* vec2, double* vecRes, int size)
+__global__ void vectorSubKernel(const double *vec1, const double *vec2, double *vecRes, int size)
 {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < size)
@@ -9,16 +11,16 @@ __global__ void vectorSubKernel(const double* vec1, const double* vec2, double* 
     }
 }
 
-double* executeVecSubKernel(double* vec1, double* vec2, int size)
+double *executeVecSubKernel(double *vec1, double *vec2, int size)
 {
-    double* d_vec1;
-    double* d_vec2;
-    double* d_vec_res;
-    double* h_res = new double[size];
+    double *d_vec1;
+    double *d_vec2;
+    double *d_vec_res;
+    double *h_res = new double[size];
     size_t sizeVec = size * sizeof(double);
-    cudaMalloc((void**)&d_vec1, sizeVec);
-    cudaMalloc((void**)&d_vec2, sizeVec);
-    cudaMalloc((void**)&d_vec_res, sizeVec);
+    cudaMalloc((void **)&d_vec1, sizeVec);
+    cudaMalloc((void **)&d_vec2, sizeVec);
+    cudaMalloc((void **)&d_vec_res, sizeVec);
 
     cudaMemcpy(d_vec1, vec1, sizeVec, cudaMemcpyHostToDevice);
     cudaMemcpy(d_vec2, vec2, sizeVec, cudaMemcpyHostToDevice);
@@ -26,11 +28,28 @@ double* executeVecSubKernel(double* vec1, double* vec2, int size)
     int threadsPerBlock = 512;
     int blocksPerGrid = (size + threadsPerBlock - 1) / threadsPerBlock;
 
-    vectorSubKernel << <threadsPerBlock, blocksPerGrid >> > (d_vec1, d_vec2, d_vec_res, size);
+    vectorSubKernel<<<threadsPerBlock, blocksPerGrid>>>(d_vec1, d_vec2, d_vec_res, size);
 
     cudaMemcpy(h_res, d_vec_res, sizeVec, cudaMemcpyDeviceToHost);
     cudaFree(d_vec1);
     cudaFree(d_vec2);
     cudaFree(d_vec_res);
     return h_res;
+}
+
+void CudaLaunchers::vectorSubtraction(const float *vec1, const float *vec2, float *vecResult, size_t size)
+{
+    int threads = 256;
+    int blocks = (size + threads - 1) / threads;
+    CudaKernels::vectorSubtraction<<<blocks, threads>>>(vec1, vec2, vecResult, size);
+    cudaDeviceSynchronize();
+}
+
+__global__ void CudaKernels::vectorSubtraction(const float *vec1, const float *vec2, float *vecResult, size_t size)
+{
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index < size)
+    {
+        vecResult[index] = vec1[index] - vec2[index];
+    }
 }

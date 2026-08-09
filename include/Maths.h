@@ -91,4 +91,5 @@ public:
     GPUMatrix multiplicationSingleV(double v);
     GPUMatrix vectorSub(GPUMatrix other);
 };
+
 #endif

@@ -1,8 +1,15 @@
 #include "Maths.h"
+#include "CudaKernels.cuh"
+#include "CudaLaunchers.cuh"
 
 __device__ double sigmoidDeriviative(double x)
 {
     double y = sigmoid(x);
+    return y * (1 - y);
+}
+__device__ float CudaKernels::sigmoidDeriviativeFunction(float x)
+{
+    float y = sigmoid(x);
     return y * (1 - y);
 }
 
@@ -32,4 +39,22 @@ double *executeSigmoidDeriviativeKernel(const double *mat1, int rows, int cols)
     cudaFree(&d_mat_result);
     cudaFree(&d_mat1);
     return h_result;
+}
+
+float *CudaLaunchers::sigmoidDeriviative(float *input, float *output, size_t size)
+{
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (size + threadsPerBlock - 1) / threadsPerBlock;
+    CudaKernels::sigmoidDeriviative<<<blocksPerGrid, threadsPerBlock>>>(input, output, size);
+    cudaDeviceSynchronize();
+    return output;
+}
+
+__global__ void CudaKernels::sigmoidDeriviative(float *input, float *output, size_t size)
+{
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < size)
+    {
+        output[idx] = CudaKernels::sigmoidDeriviativeFunction(input[idx]);
+    }
 }
