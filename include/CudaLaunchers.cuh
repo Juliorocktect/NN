@@ -150,5 +150,13 @@ namespace CudaLaunchers
      * @param size
      */
     void sigmoid(float *mat, float *matResult, size_t size);
+    /**
+     * @brief applys softmax function to each row of the matrix
+     *
+     * @param mat
+     * @param rows
+     * @param cols
+     */
+    void softmax(float *mat, float *matResult, int rows, int cols);
 };
 #endif

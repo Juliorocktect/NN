@@ -195,3 +195,9 @@ GMatrix GMatrix::sigmoid()
     CudaLaunchers::sigmoid(matrix, result.getMatrix(), rows * cols);
     return result;
 }
+void GMatrix::softmax()
+{
+    GMatrix result(rows, cols);
+    CudaLaunchers::softmax(matrix, result.getMatrix(), rows, cols);
+    matrix = result.getMatrix();
+}

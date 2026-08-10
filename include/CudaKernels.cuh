@@ -165,5 +165,26 @@ namespace CudaKernels
      * @return __global__
      */
     __global__ void sigmoidKernel(float *input, float *output, size_t size);
+
+    /**
+     * @brief Softmax __device__ function for applying the softmax function to each element of a matrix.
+     *
+     * @param x
+     * @param max
+     * @param sum
+     * @return __device__
+     */
+    __device__ float softmaxFunction(float x, float max, float sum);
+
+    /**
+     * @brief Softmax kernel for applying the softmax function to each row of a matrix.
+     * Formula: softmax(x_i) = exp(x_i) / sum(exp(x_j)) for all j in the same row
+     * @param input
+     * @param output
+     * @param rows
+     * @param cols
+     * @return __global__
+     */ 
+    __global__ void softmaxKernel(float *input, float *output, int rows, int cols);
 };
 #endif

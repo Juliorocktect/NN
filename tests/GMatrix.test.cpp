@@ -158,6 +158,27 @@ TEST(GMatrixTest, TransposeSwapsDimensionsAndValues)
     EXPECT_EQ(copyToHost(result), (std::vector<float>{1.0f, 4.0f, 2.0f, 5.0f, 3.0f, 6.0f}));
 }
 
+TEST(GMatrixTest, SoftmaxNormalizesEachColumn)
+{
+    GMatrix matrix(2, 2);
+    copyToDevice(matrix, {1.0f, 2.0f, 3.0f, 4.0f});
+
+    matrix.softmax();
+
+    const std::vector<float> actual = copyToHost(matrix);
+    const std::vector<float> expected{
+        0.11920292f,
+        0.11920292f,
+        0.88079708f,
+        0.88079708f};
+
+    ASSERT_EQ(actual.size(), expected.size());
+    for (size_t index = 0; index < expected.size(); ++index)
+    {
+        EXPECT_NEAR(actual[index], expected[index], 1e-5f);
+    }
+}
+
 TEST(GMatrixTest, SigmoidDerivativeCalculatesElementwiseDerivative)
 {
     GMatrix matrix(2, 2);
