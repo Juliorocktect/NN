@@ -184,7 +184,18 @@ namespace CudaKernels
      * @param rows
      * @param cols
      * @return __global__
-     */ 
+     */
     __global__ void softmaxKernel(float *input, float *output, int rows, int cols);
+
+    /**
+     * @brief
+     *
+     * @param mat
+     * @param matResult
+     * @param size
+     * @return __global__
+     */
+    __global__ void hotEncodeToMatrixKernel(float *mat, float *matResult, size_t size);
+
 };
 #endif

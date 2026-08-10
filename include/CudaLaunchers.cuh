@@ -158,5 +158,14 @@ namespace CudaLaunchers
      * @param cols
      */
     void softmax(float *mat, float *matResult, int rows, int cols);
+
+    /**
+     * @brief
+     *
+     * @param labels
+     * @param size
+     * @return float*
+     */
+    float *hotEncodeYMatrix(double *labels, int size);
 };
 #endif

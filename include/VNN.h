@@ -5,6 +5,8 @@
 #include <cmath>
 #include <inttypes.h>
 #include <Maths.h>
+#include "GMatrix.hpp"
+#include "GVector.hpp"
 #define SIZE_INPUT_LAYER 784
 #define SIZE_FIRST_LAYER 480
 #define SIZE_SECOND_LAYER 200
@@ -20,45 +22,45 @@ private:
     void printRed(const char *text);
     double costF();
 
-    GPUMatrix inputData; // 784xSIZE_TRAINING_DATA
+    GMatrix inputData; // 784xSIZE_TRAINING_DATA
     // Weights
-    GPUMatrix w1; // 480x784
-    GPUMatrix w2; // 200x480
-    GPUMatrix w3; // 180x200;
-    GPUMatrix w4; // 10x180;
+    GMatrix w1; // 480x784
+    GMatrix w2; // 200x480
+    GMatrix w3; // 180x200;
+    GMatrix w4; // 10x180;
     // Neurons
-    GPUMatrix Z1;    // 480xSIZE_TRAINING_DATA
-    GPUMatrix Z2;    // 200xSIZE_TRAINING_DATA
-    GPUMatrix Z3;    // 180xSIZE_TRAINING_DATA
-    GPUMatrix Z4;    // 10xSIZE_TRAINING_DATA
-    GPUMatrix A1;    // 480xSIZE_TRAINING_DATA
-    GPUMatrix A2;    // 200xSIZE_TRAINING_DATA
-    GPUMatrix A3;    // 180xSIZE_TRAINING_DATA
-    GPUMatrix y_hat; // 10xSIZE_TRAINING_DATA
+    GMatrix Z1;    // 480xSIZE_TRAINING_DATA
+    GMatrix Z2;    // 200xSIZE_TRAINING_DATA
+    GMatrix Z3;    // 180xSIZE_TRAINING_DATA
+    GMatrix Z4;    // 10xSIZE_TRAINING_DATA
+    GMatrix A1;    // 480xSIZE_TRAINING_DATA
+    GMatrix A2;    // 200xSIZE_TRAINING_DATA
+    GMatrix A3;    // 180xSIZE_TRAINING_DATA
+    GMatrix y_hat; // 10xSIZE_TRAINING_DATA
 
-    GPUMatrix y; // 10xSIZE_TRAINING_DATA Actual Result
+    GMatrix y; // 10xSIZE_TRAINING_DATA Actual Result
     // Biases
-    GPUMatrix b1; // bias 480x1
-    GPUMatrix b2; // bias 200x1
-    GPUMatrix b3; // bias 180x1 3. hidden layer
-    GPUMatrix b4; // bias output layer 10x1
+    GVector b1; // bias 480x1
+    GVector b2; // bias 200x1
+    GVector b3; // bias 180x1 3. hidden layer
+    GVector b4; // bias output layer 10x1
     // Derivatives
-    GPUMatrix dE_dYHAT;  // Derivative 10xSIZE_TRAINING_DATA Output Layer
-    GPUMatrix dYHAT_dZ3; // Derivative 180xSIZE_TRAINING_DATA Layer 3
-    GPUMatrix dZ2;       // Derivative 200xSIZE_TRAINING_DATA Layer 2
-    GPUMatrix db4;       // Derivative of bias mit einem Mittelwert 10x1
-    GPUMatrix db3;       // Derivative of bias mit einem Mittelwert 180x1
-    GPUMatrix db2;       // Derivative of bias mit einem Mittelwert 200x1
-    GPUMatrix db1;       // Derivative of bias mit einem Mittelwert 480x1
-    GPUMatrix dW1;       // Derivative of weights Layer 1 480x784
-    GPUMatrix dW2;       // Derivation of weights Layer 2 200x480
-    GPUMatrix dW3;       // Derivation of weights Layer 3 180x200
-    GPUMatrix dW4;       // Derivation of weights Output Layer 4 10x180
-    double *labels;      // 60.000 labels to the 60.000 images
+    GMatrix dE_dYHAT;  // Derivative 10xSIZE_TRAINING_DATA Output Layer
+    GMatrix dYHAT_dZ3; // Derivative 180xSIZE_TRAINING_DATA Layer 3
+    GMatrix dZ2;       // Derivative 200xSIZE_TRAINING_DATA Layer 2
+    GVector db4;       // Derivative of bias mit einem Mittelwert 10x1
+    GVector db3;       // Derivative of bias mit einem Mittelwert 180x1
+    GVector db2;       // Derivative of bias mit einem Mittelwert 200x1
+    GVector db1;       // Derivative of bias mit einem Mittelwert 480x1
+    GMatrix dW1;       // Derivative of weights Layer 1 480x784
+    GMatrix dW2;       // Derivation of weights Layer 2 200x480
+    GMatrix dW3;       // Derivation of weights Layer 3 180x200
+    GMatrix dW4;       // Derivation of weights Output Layer 4 10x180
+    double *labels;    // 60.000 labels to the 60.000 images
 public:
     NNG();
     ~NNG();
-    void setInputData(double *mat);
+    void setInputData(float *mat);
     void setLabels(double *labels);
     void forwardProp();
     void backpropagateOutputLayer();
