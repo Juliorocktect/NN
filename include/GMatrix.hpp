@@ -4,6 +4,8 @@
 #include "Maths.h"
 #include "CudaKernels.cuh"
 #include "CudaLaunchers.cuh"
+#include "GVector.hpp"
+
 /**
  * @brief new Matrix class to Store Data on GPU
  *
@@ -27,13 +29,12 @@ public:
     float *getMatrix();
     GMatrix &operator=(const GMatrix &other); // = Operator
     GMatrix operator+(GMatrix &other);
+    GMatrix operator+(GVector &other);
     GMatrix operator-(GMatrix &other);
     GMatrix operator*(GMatrix &other);
     GMatrix operator/(double v);
     GMatrix transpose();
     GMatrix sigmoidDeriviative();
-    void init();
-    void initZero();
     GMatrix sigmoid();
     GMatrix hadamardMultiplication(GMatrix &other);
     void softmax();

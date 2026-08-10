@@ -132,6 +132,20 @@ GMatrix GMatrix::operator*(GMatrix &other)
     CudaLaunchers::multiply(matrix, other.getMatrix(), result.getMatrix(), rows, cols, other.getCols());
     return result;
 }
+
+GMatrix GMatrix::operator+(GVector &other)
+{
+    if (other.getSize() != rows)
+    {
+        std::cerr << "Matrixaddition nicht möglich, falsche Dimensionen!" << std::endl;
+        return GMatrix(0, 0);
+    }
+
+    GMatrix result(rows, cols);
+    CudaLaunchers::vectorAddMatrix(matrix, other.getVector(), result.getMatrix(), other.getSize(), rows, cols);
+    return result;
+}
+
 GMatrix GMatrix::operator-(GMatrix &other)
 {
     if (other.getRows() != rows || other.getCols() != cols)

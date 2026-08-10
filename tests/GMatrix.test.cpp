@@ -19,6 +19,12 @@ void copyToDevice(GMatrix &matrix, const std::vector<float> &values)
     ASSERT_EQ(cudaMemcpy(matrix.getMatrix(), values.data(), values.size() * sizeof(float), cudaMemcpyHostToDevice), cudaSuccess);
 }
 
+void copyVectorToDeviceForMatrixTest(GVector &vector, const std::vector<float> &values)
+{
+    ASSERT_EQ(values.size(), vector.getSize());
+    ASSERT_EQ(cudaMemcpy(vector.getVector(), values.data(), values.size() * sizeof(float), cudaMemcpyHostToDevice), cudaSuccess);
+}
+
 TEST(GMatrixTest, DefaultConstructorCreatesEmptyMatrix)
 {
     GMatrix matrix;
@@ -82,6 +88,20 @@ TEST(GMatrixTest, AdditionAddsRowVectorToEachMatrixColumn)
     GMatrix vector(1, 2);
     copyToDevice(matrix, {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f});
     copyToDevice(vector, {10.0f, 20.0f});
+
+    GMatrix result = matrix + vector;
+
+    EXPECT_EQ(result.getRows(), 2);
+    EXPECT_EQ(result.getCols(), 3);
+    EXPECT_EQ(copyToHost(result), (std::vector<float>{11.0f, 12.0f, 13.0f, 24.0f, 25.0f, 26.0f}));
+}
+
+TEST(GMatrixTest, AdditionAddsGVectorValueToEachMatrixRow)
+{
+    GMatrix matrix(2, 3);
+    GVector vector(2);
+    copyToDevice(matrix, {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f});
+    copyVectorToDeviceForMatrixTest(vector, {10.0f, 20.0f});
 
     GMatrix result = matrix + vector;
 
