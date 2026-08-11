@@ -46,11 +46,12 @@ void NNG::printRed(const char *text)
 {
     std::cout << "\033[1;33m" << text << "\033[0m\n";
 }
-void NNG::initilizeYMatrix(double *pLabels)
+void NNG::initilizeYMatrix(float *pLabels)
 {
     this->labels = pLabels;
     y = GMatrix(10, SIZE_TRAINING_DATA);
-    y.setMatrix(CudaLaunchers::hotEncodeYMatrix(pLabels, SIZE_TRAINING_DATA));
+    // y muss mit 0 initialisiert sein!
+    y.setMatrix(CudaLaunchers::hotEncodeYMatrix(pLabels, y.getMatrix(), SIZE_TRAINING_DATA));
 }
 void NNG::setLabels(double *labels)
 {

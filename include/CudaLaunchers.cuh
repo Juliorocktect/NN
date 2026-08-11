@@ -160,12 +160,13 @@ namespace CudaLaunchers
     void softmax(float *mat, float *matResult, int rows, int cols);
 
     /**
-     * @brief
+     * @brief returns an Matrix of the size 10xlabels
      *
      * @param labels
      * @param size
      * @return float*
      */
-    float *hotEncodeYMatrix(double *labels, int size);
+    float *hotEncodeYMatrix(float *labels, float *matResult, size_t size);
 };
+
 #endif

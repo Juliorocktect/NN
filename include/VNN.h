@@ -56,7 +56,7 @@ private:
     GMatrix dW2;       // Derivation of weights Layer 2 200x480
     GMatrix dW3;       // Derivation of weights Layer 3 180x200
     GMatrix dW4;       // Derivation of weights Output Layer 4 10x180
-    double *labels;    // 60.000 labels to the 60.000 images
+    float *labels;    // 60.000 labels to the 60.000 images
 public:
     NNG();
     ~NNG();
@@ -68,9 +68,9 @@ public:
     void backpropagateSecondLayer();
     void backpropagateFirstLayer();
     void updateWeightsAndBiases();
-    void initilizeYMatrix(double *pLabels);
+    void initilizeYMatrix(float *pLabels);
     double sumCrossEntropyLoss();
-    int calcAccuracy(double *inputData);
+    // int calcAccuracy(float *inputData);
     int argmax(const double *vec, int size);
 };
 #endif
