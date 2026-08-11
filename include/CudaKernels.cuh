@@ -197,6 +197,27 @@ namespace CudaKernels
      */
     __global__ void hotEncodeToMatrixKernel(float *mat, float *matResult, size_t size);
 
+    /**
+     * @brief
+     *
+     * @param y_hat
+     * @param labels
+     * @param loss
+     * @param numSamples
+     * @return __global__
+     */
     __global__ void crossEntropyLossKernel(const float *y_hat, const float *labels, float *loss, int numSamples);
+
+    /**
+     * @brief Multiplies every single value of Matrix with the value
+     *
+     * @param mat
+     * @param value
+     * @param matResult
+     * @param rows
+     * @param cols
+     * @return __global__
+     */
+    __global__ void matrixMultiplicationWithFloatKernel(float *mat, float value, float *matResult, size_t rows, size_t cols);
 };
 #endif

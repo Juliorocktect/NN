@@ -201,3 +201,17 @@ TEST(GMatrixTest, SigmoidDerivativeCalculatesElementwiseDerivative)
         EXPECT_NEAR(actual[index], expected[index], 1e-5f);
     }
 }
+
+TEST(GMatrixTest, MultiplyWithFloatMultipliesEveryElement)
+{
+    GMatrix matrix(2, 2);
+    copyToDevice(matrix, {1.0f, -2.0f, 0.5f, 4.0f});
+
+    float multiplier = 2.0f;
+
+    GMatrix result = matrix * multiplier;
+
+    EXPECT_EQ(result.getRows(), 2);
+    EXPECT_EQ(result.getCols(), 2);
+    EXPECT_EQ(copyToHost(result), (std::vector<float>{2.0f, -4.0f, 1.0f, 8.0f}));
+}

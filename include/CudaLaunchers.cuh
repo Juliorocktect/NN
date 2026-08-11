@@ -169,8 +169,26 @@ namespace CudaLaunchers
      * @return float*
      */
     float *hotEncodeYMatrix(float *labels, float *matResult, size_t size);
-
+    /**
+     * @brief
+     *
+     * @param y_hat
+     * @param labels
+     * @param numSamples
+     * @return float
+     */
     float sumCrossEntropyLoss(const float *y_hat, const float *labels, int numSamples);
+
+    /**
+     * @brief Multiplies every single value of Matrix with the value
+     *
+     * @param mat
+     * @param value
+     * @param matResult
+     * @param rows
+     * @param cols
+     */
+    void matrixMultiplicationWithFloat(float *mat, float value, float *matResult, size_t rows, size_t cols);
 
 };
 

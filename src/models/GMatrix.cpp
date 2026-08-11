@@ -132,6 +132,12 @@ GMatrix GMatrix::operator*(GMatrix &other)
     CudaLaunchers::multiply(matrix, other.getMatrix(), result.getMatrix(), rows, cols, other.getCols());
     return result;
 }
+GMatrix GMatrix::operator*(float value)
+{
+    GMatrix result(rows, cols);
+    CudaLaunchers::matrixMultiplicationWithFloat(matrix, value, result.getMatrix(), rows, cols);
+    return result;
+}
 
 GMatrix GMatrix::operator+(GVector &other)
 {

@@ -107,6 +107,13 @@ public:
     GMatrix operator*(GMatrix &other);
 
     /**
+     * @brief Multiplies matrix with single float value
+     * @param other Matrix to multiply with.
+     * @return Resulting matrix.
+     */
+    GMatrix operator*(float value);
+
+    /**
      * @brief Divides every matrix element by a scalar.
      * @param v Scalar divisor.
      * @return Resulting matrix.
