@@ -197,5 +197,6 @@ namespace CudaKernels
      */
     __global__ void hotEncodeToMatrixKernel(float *mat, float *matResult, size_t size);
 
+    __global__ void crossEntropyLossKernel(const float *y_hat, const float *labels, float *loss, int numSamples);
 };
 #endif

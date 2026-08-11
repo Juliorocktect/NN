@@ -160,13 +160,18 @@ namespace CudaLaunchers
     void softmax(float *mat, float *matResult, int rows, int cols);
 
     /**
-     * @brief returns an Matrix of the size 10xlabels
+     * @brief returns an Matrix of the size 10xSIZE_TRAINING_DATA
+     *  At the correct position of the label 1 is placed
+     *  the rest is 0
      *
      * @param labels
      * @param size
      * @return float*
      */
     float *hotEncodeYMatrix(float *labels, float *matResult, size_t size);
+
+    float sumCrossEntropyLoss(const float *y_hat, const float *labels, int numSamples);
+
 };
 
 #endif

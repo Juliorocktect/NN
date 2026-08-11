@@ -56,12 +56,12 @@ private:
     GMatrix dW2;       // Derivation of weights Layer 2 200x480
     GMatrix dW3;       // Derivation of weights Layer 3 180x200
     GMatrix dW4;       // Derivation of weights Output Layer 4 10x180
-    float *labels;    // 60.000 labels to the 60.000 images
+    float *labels;     // 60.000 labels to the 60.000 images
 public:
     NNG();
     ~NNG();
     void setInputData(float *mat);
-    void setLabels(double *labels);
+    void setLabels(float *labels);
     void forwardProp();
     void backpropagateOutputLayer();
     void backpropagateThirdLayer();

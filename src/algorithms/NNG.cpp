@@ -53,7 +53,7 @@ void NNG::initilizeYMatrix(float *pLabels)
     // y muss mit 0 initialisiert sein!
     y.setMatrix(CudaLaunchers::hotEncodeYMatrix(pLabels, y.getMatrix(), SIZE_TRAINING_DATA));
 }
-void NNG::setLabels(double *labels)
+void NNG::setLabels(float *labels)
 {
     this->labels = labels;
 }
