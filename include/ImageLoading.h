@@ -17,5 +17,7 @@ namespace ImagePreProcessor
     void showImage(const std::vector<uint8_t> &pixels, int width, int height);
     double *loadImages();
     std::vector<double> readLabelsAsDouble();
+    float *loadImageAsFLoat();
+    std::vector<float> readLabelsAsFloat();
 }
 #endif
