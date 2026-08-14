@@ -96,7 +96,7 @@ namespace ImagePreProcessor
             labels[i] = static_cast<double>(raw[i]);
         return labels;
     }
-    float *ImagePreProcessor::loadImageAsFLoat()
+    float *loadImageAsFLoat()
     {
         std::ifstream imageFile(IMAGE_PATH, std::ios::binary);
         if (!imageFile)
@@ -124,7 +124,7 @@ namespace ImagePreProcessor
         }
         return images;
     }
-    std::vector<float> ImagePreProcessor::readLabelsAsFloat()
+    std::vector<float> readLabelsAsFloat()
     {
         std::ifstream file(LABEL_PATH, std::ios::binary);
         if (!file)
@@ -144,7 +144,7 @@ namespace ImagePreProcessor
 
         std::vector<float> labels(numLabels);
         for (int i = 0; i < numLabels; ++i)
-            labels[i] = static_cast<double>(raw[i]);
+            labels[i] = static_cast<float>(raw[i]);
         return labels;
     }
 
