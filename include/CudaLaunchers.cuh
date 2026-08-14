@@ -190,6 +190,15 @@ namespace CudaLaunchers
      */
     void matrixMultiplicationWithFloat(float *mat, float value, float *matResult, size_t rows, size_t cols);
 
+    /**
+     * @brief multiplies vec * float
+     *
+     * @param vec
+     * @param vecResult
+     * @param value
+     * @param size
+     */
+    void vectorValueMultiplication(float *vec, float *vecResult, float value, size_t size);
 };
 
 #endif

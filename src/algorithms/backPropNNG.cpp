@@ -52,14 +52,30 @@ void NNG::updateWeightsAndBiases()
 {
     // printGreen("Updating Weights");
     // Update weights
-    w4 = w4 - dW4.multiplicationSingleV(LEARNING_RATE);
-    w3 = w3 - dW3.multiplicationSingleV(LEARNING_RATE);
-    w2 = w2 - dW2.multiplicationSingleV(LEARNING_RATE);
-    w1 = w1 - dW1.multiplicationSingleV(LEARNING_RATE);
+    GMatrix tmpW4 = (dW4 * LEARNING_RATE);
+    w4 = w4 - tmpW4;
+    tmpW4.~GMatrix();
+    GMatrix tmpW3 = (dW3 * LEARNING_RATE);
+    w3 = w3 - tmpW3;
+    tmpW3.~GMatrix();
+    GMatrix tmpW2 = (dW2 * LEARNING_RATE);
+    w2 = w2 - tmpW2;
+    tmpW2.~GMatrix();
+    GMatrix tmpW1 = (dW1 * LEARNING_RATE);
+    w1 = w1 - tmpW1;
+    tmpW1.~GMatrix();
     // printGreen("Updating Biases");
     // update biases
-    b4 = b4.vectorSub(db4.multiplicationSingleV(LEARNING_RATE));
-    b3 = b3.vectorSub(db3.multiplicationSingleV(LEARNING_RATE));
-    b2 = b2.vectorSub(db2.multiplicationSingleV(LEARNING_RATE));
-    b1 = b1.vectorSub(db1.multiplicationSingleV(LEARNING_RATE));
+    GVector tmpB4 = (db4 * LEARNING_RATE);
+    b4 = b4 - tmpB4;
+    tmpB4.~GVector();
+    GVector tmpB3 = (db3 * LEARNING_RATE);
+    b3 = b3 - tmpB3;
+    tmpB3.~GVector();
+    GVector tmpB2 = (db2 * LEARNING_RATE);
+    b2 = b2 - tmpB2;
+    tmpB2.~GVector();
+    GVector tmpB1 = (db1 * LEARNING_RATE);
+    b1 = b1 - tmpB1;
+    tmpB1.~GVector();
 }

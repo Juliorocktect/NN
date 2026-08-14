@@ -26,6 +26,7 @@ public:
     GVector operator+(GVector &other);
     GVector operator-(GVector &other);
     GVector operator*(GVector &other);
+    GVector operator*(float value);
     GVector operator/(double v);
     void init();
     void initZero();

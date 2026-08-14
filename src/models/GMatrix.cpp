@@ -164,6 +164,7 @@ GMatrix GMatrix::operator-(GMatrix &other)
     CudaLaunchers::subtract(matrix, other.getMatrix(), result.getMatrix(), rows * cols);
     return result;
 }
+
 GMatrix GMatrix::operator/(double v)
 {
     GMatrix result(rows, cols);

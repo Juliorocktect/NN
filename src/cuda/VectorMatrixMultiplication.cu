@@ -43,6 +43,6 @@ void CudaLaunchers::matrixMultiplicationWithFloat(float *mat, float value, float
 {
     dim3 grid(cols);
     dim3 block(rows);
-    CudaKernels::matrixMultiplicationWithFloatKernel(mat, value, matResult, rows, cols);
+    CudaKernels::matrixMultiplicationWithFloatKernel<<<grid,block>>>(mat, value, matResult, rows, cols);
     cudaDeviceSynchronize();
 }

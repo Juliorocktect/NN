@@ -6,7 +6,6 @@
 #include <cuda_runtime.h>
 #include <random>
 #include <iostream>
-// TODO: Store Matrix o
 
 /**
  * @brief
