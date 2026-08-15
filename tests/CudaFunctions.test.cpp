@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <cuda_runtime.h>
 #include <cmath>
+#include <numeric>
 #include <vector>
 #include "CudaLaunchers.cuh"
 
@@ -46,4 +47,64 @@ TEST(CudaCrossEntropyLossTest, ReturnsZeroForInvalidLabel)
 
     EXPECT_NEAR(loss, expected, 1e-5f);
     EXPECT_EQ(cudaGetLastError(), cudaSuccess);
+}
+
+TEST(CudaLaunchersHotEncodeYMatrixTest, EncodesRepeatedLabelsCorrectly)
+{
+    const size_t numSamples = 4;
+    std::vector<float> labels_h = {3.0f, 3.0f, 3.0f, 3.0f};
+    std::vector<float> expected(numSamples * 10, 0.0f);
+    for (size_t i = 0; i < numSamples; ++i)
+    {
+        expected[i * 10 + 3] = 1.0f;
+    }
+
+    float *labels_d = nullptr;
+    float *result_d = nullptr;
+    cudaMalloc(&labels_d, numSamples * sizeof(float));
+    cudaMalloc(&result_d, numSamples * 10 * sizeof(float));
+    cudaMemset(result_d, 0, numSamples * 10 * sizeof(float));
+    cudaMemcpy(labels_d, labels_h.data(), numSamples * sizeof(float), cudaMemcpyHostToDevice);
+
+    CudaLaunchers::hotEncodeYMatrix(labels_d, result_d, numSamples);
+
+    std::vector<float> result_h(numSamples * 10, 0.0f);
+    cudaMemcpy(result_h.data(), result_d, numSamples * 10 * sizeof(float), cudaMemcpyDeviceToHost);
+
+    EXPECT_EQ(cudaGetLastError(), cudaSuccess);
+    EXPECT_EQ(result_h, expected);
+
+    cudaFree(labels_d);
+    cudaFree(result_d);
+}
+
+TEST(CudaLaunchersHotEncodeYMatrixTest, EncodesEveryClassCorrectly)
+{
+    const size_t numSamples = 10;
+    std::vector<float> labels_h(numSamples);
+    std::iota(labels_h.begin(), labels_h.end(), 0.0f);
+
+    std::vector<float> expected(numSamples * 10, 0.0f);
+    for (size_t i = 0; i < numSamples; ++i)
+    {
+        expected[i * 10 + static_cast<int>(labels_h[i])] = 1.0f;
+    }
+
+    float *labels_d = nullptr;
+    float *result_d = nullptr;
+    cudaMalloc(&labels_d, numSamples * sizeof(float));
+    cudaMalloc(&result_d, numSamples * 10 * sizeof(float));
+    cudaMemset(result_d, 0, numSamples * 10 * sizeof(float));
+    cudaMemcpy(labels_d, labels_h.data(), numSamples * sizeof(float), cudaMemcpyHostToDevice);
+
+    CudaLaunchers::hotEncodeYMatrix(labels_d, result_d, numSamples);
+
+    std::vector<float> result_h(numSamples * 10, 0.0f);
+    cudaMemcpy(result_h.data(), result_d, numSamples * 10 * sizeof(float), cudaMemcpyDeviceToHost);
+
+    EXPECT_EQ(cudaGetLastError(), cudaSuccess);
+    EXPECT_EQ(result_h, expected);
+
+    cudaFree(labels_d);
+    cudaFree(result_d);
 }

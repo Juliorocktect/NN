@@ -96,11 +96,13 @@ namespace ImagePreProcessor
             labels[i] = static_cast<double>(raw[i]);
         return labels;
     }
-    float *loadImageAsFLoat()
+
+    float *loadImageAsFLoat(size_t imageCount)
     {
         std::ifstream imageFile(IMAGE_PATH, std::ios::binary);
         if (!imageFile)
             throw std::runtime_error("Unable to open image file");
+
         int magic = readInt(imageFile);
         if (magic != 2051)
             throw std::runtime_error("Invalid image file!");
@@ -109,19 +111,32 @@ namespace ImagePreProcessor
         int rows = readInt(imageFile);
         int cols = readInt(imageFile);
 
-        size_t totalSize = numImages * rows * cols;
-        float *images = new float[totalSize];
+        if (numImages <= 0 || rows <= 0 || cols <= 0)
+            throw std::runtime_error("Invalid image metadata: dimensions must be positive");
 
-        std::vector<uint8_t> buffer(rows * cols);
+        const size_t requestedImages = (imageCount == 0)
+                                           ? static_cast<size_t>(numImages)
+                                           : std::min<size_t>(imageCount, static_cast<size_t>(numImages));
 
-        for (int i = 0; i < numImages; ++i)
+        const size_t imageStride = static_cast<size_t>(rows) * static_cast<size_t>(cols);
+        const size_t totalSize = requestedImages * imageStride;
+        float *images = new float[totalSize]();
+        std::vector<uint8_t> buffer(imageStride);
+
+        for (size_t i = 0; i < requestedImages; ++i)
         {
-            imageFile.read(reinterpret_cast<char *>(buffer.data()), rows * cols);
-            for (int j = 0; j < rows * cols; ++j)
+            if (!imageFile.read(reinterpret_cast<char *>(buffer.data()), static_cast<std::streamsize>(imageStride)))
             {
-                images[i * rows * cols + j] = static_cast<float>(buffer[j]) / 255.0; // Normalisierung
+                delete[] images;
+                throw std::runtime_error("Failed to read image block");
+            }
+
+            for (size_t j = 0; j < imageStride; ++j)
+            {
+                images[i * imageStride + j] = static_cast<float>(buffer[j]) / 255.0f;
             }
         }
+
         return images;
     }
     std::vector<float> readLabelsAsFloat()

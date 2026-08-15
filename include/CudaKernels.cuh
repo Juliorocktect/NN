@@ -218,17 +218,17 @@ namespace CudaKernels
      * @param cols
      * @return __global__
      */
-    __global__ void matrixMultiplicationWithFloatKernel(float *mat, float value, float *matResult, size_t rows, size_t cols);
+    __global__ void matrixMultiplicationWithFloatKernel(float *mat, float value, float *matResult, size_t size);
 
     /**
      * @brief multiplies vec * float
-     * 
-     * @param vec 
-     * @param vecResult 
-     * @param size 
-     * @param value 
-     * @return __global__ 
+     *
+     * @param vec
+     * @param vecResult
+     * @param size
+     * @param value
+     * @return __global__
      */
-    __global__ void vectorValueMultiplication(float* vec,float* vecResult,size_t size,float value);
+    __global__ void vectorValueMultiplication(float *vec, float *vecResult, size_t size, float value);
 };
 #endif

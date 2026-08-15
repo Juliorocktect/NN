@@ -213,5 +213,16 @@ TEST(GMatrixTest, MultiplyWithFloatMultipliesEveryElement)
 
     EXPECT_EQ(result.getRows(), 2);
     EXPECT_EQ(result.getCols(), 2);
+    result.printMat();
     EXPECT_EQ(copyToHost(result), (std::vector<float>{2.0f, -4.0f, 1.0f, 8.0f}));
+}
+
+TEST(GMatrixTest, UploadMatrixToGPUCopiesHostValuesToDeviceBuffer)
+{
+    GMatrix matrix(2, 3);
+    std::vector<float> hostBuffer = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
+
+    matrix.uploadMatrixToGPU(hostBuffer.data());
+
+    EXPECT_EQ(copyToHost(matrix), hostBuffer);
 }

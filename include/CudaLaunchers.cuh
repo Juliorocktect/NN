@@ -168,7 +168,7 @@ namespace CudaLaunchers
      * @param size
      * @return float*
      */
-    float *hotEncodeYMatrix(float *labels, float *matResult, size_t size);
+    void hotEncodeYMatrix(float *labels, float *matResult, size_t size);
     /**
      * @brief
      *

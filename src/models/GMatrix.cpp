@@ -208,3 +208,23 @@ void GMatrix::softmax()
     CudaLaunchers::softmax(matrix, result.getMatrix(), rows, cols);
     matrix = result.getMatrix();
 }
+void GMatrix::uploadMatrixToGPU(float *matrix)
+{
+    if (matrix == nullptr || this->matrix == nullptr)
+    {
+        std::cerr << "Fehler beim Kopieren der Matrix: Ungültiger Zeiger." << std::endl;
+        return;
+    }
+
+    size_t size = static_cast<size_t>(this->rows) * this->cols * sizeof(float);
+    cudaError_t error = cudaMemcpy(
+        this->matrix,
+        matrix,
+        size,
+        cudaMemcpyHostToDevice);
+    if (error != cudaSuccess)
+    {
+        std::cerr << "Fehler beim Kopieren der Matrix: "
+                  << cudaGetErrorString(error) << std::endl;
+    }
+}

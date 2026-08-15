@@ -2,6 +2,7 @@
 
 NNG::NNG()
 {
+    y = GMatrix(10, SIZE_TRAINING_DATA);
     w1 = GMatrix(480, 784);
     w1.initRandom();
     w2 = GMatrix(200, 480);
@@ -34,9 +35,13 @@ NNG::NNG()
     dW1 = GMatrix(480, 784);
     inputData = GMatrix(784, SIZE_TRAINING_DATA);
 }
+NNG::~NNG()
+{
+    free(labels);
+}
 void NNG::setInputData(float *mat)
 {
-    inputData.setMatrix(mat);
+    inputData.uploadMatrixToGPU(mat);
 }
 void NNG::printGreen(const char *text)
 {
@@ -49,9 +54,8 @@ void NNG::printRed(const char *text)
 void NNG::initilizeYMatrix(float *pLabels)
 {
     this->labels = pLabels;
-    y = GMatrix(10, SIZE_TRAINING_DATA);
     // y muss mit 0 initialisiert sein!
-    y.setMatrix(CudaLaunchers::hotEncodeYMatrix(pLabels, y.getMatrix(), SIZE_TRAINING_DATA));
+    CudaLaunchers::hotEncodeYMatrix(pLabels, y.getMatrix(), SIZE_TRAINING_DATA);
 }
 void NNG::setLabels(float *labels)
 {

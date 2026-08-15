@@ -29,13 +29,12 @@ double *executeSingleVMatrixMultiplication(double *mat, double v, int rows, int 
     return h_res;
 }
 
-__global__ void CudaKernels::matrixMultiplicationWithFloatKernel(float *mat, float value, float *matResult, size_t rows, size_t cols)
+__global__ void CudaKernels::matrixMultiplicationWithFloatKernel(float *mat, float value, float *matResult, size_t size)
 {
-    int row = threadIdx.x;
-    int col = blockIdx.x;
-    if (row < rows && col < cols)
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < size)
     {
-        matResult[rows * cols + col] = mat[row * cols + col] * value;
+        matResult[idx] = mat[idx] * value;
     }
 }
 
@@ -43,6 +42,7 @@ void CudaLaunchers::matrixMultiplicationWithFloat(float *mat, float value, float
 {
     dim3 grid(cols);
     dim3 block(rows);
-    CudaKernels::matrixMultiplicationWithFloatKernel<<<grid,block>>>(mat, value, matResult, rows, cols);
+    size_t size = rows * cols;
+    CudaKernels::matrixMultiplicationWithFloatKernel<<<grid, block>>>(mat, value, matResult, size);
     cudaDeviceSynchronize();
 }

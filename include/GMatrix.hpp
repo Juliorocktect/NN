@@ -13,6 +13,10 @@
 class GMatrix
 {
 private:
+    /**
+     * @brief device pointer to Matrix stored in VRAM
+     *
+     */
     float *matrix;
     size_t rows;
     size_t cols;
@@ -165,5 +169,13 @@ public:
      * @param other Matrix to multiply with.
      */
     void vectorMatrixMultiplication(GMatrix &other);
+
+    /**
+     * @brief copys matrix
+     * matrix must have the same dimensions!!!!!
+     *
+     * @param matrix
+     */
+    void uploadMatrixToGPU(float *matrix);
 };
 #endif

@@ -39,18 +39,19 @@ __global__ void CudaKernels::hotEncodeToMatrixKernel(float *mat, float *matResul
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < size)
     {
-        int label = static_cast<int>(mat[idx]);
-        if (mat[idx] < 10)
+        float v = mat[idx];
+        // Bei Float ist das wichtig so zu prüfen
+        if (v >= 0.0f && v < 10.0f)
         {
-            matResult[idx * 10 + label] = 1.0;
+            int label = static_cast<int>(v);
+            matResult[idx * 10 + label] = 1.0f;
         }
     }
 }
-float *CudaLaunchers::hotEncodeYMatrix(float *mat, float *matResult, size_t size)
+void CudaLaunchers::hotEncodeYMatrix(float *mat, float *matResult, size_t size)
 {
     int threads = 10;
     dim3 block(size);
-    size_t sizeMat = size * sizeof(float);
     CudaKernels::hotEncodeToMatrixKernel<<<threads, block>>>(mat, matResult, size);
     cudaDeviceSynchronize();
 }
