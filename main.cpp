@@ -17,6 +17,8 @@ int main(int argc, char const *argv[])
 
     float *images = ImagePreProcessor::loadImageAsFLoat(40000);
     n->setInputData(images);
+    n->forwardProp();
+    n->backpropagateOutputLayer();
     //    for (int i = 0; i < 15; i++)
     //{
     //    n->forwardProp();

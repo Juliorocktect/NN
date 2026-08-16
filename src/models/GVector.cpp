@@ -141,6 +141,12 @@ GVector GVector::operator*(GVector &other)
     CudaLaunchers::hadamardProduct(vector, other.getVector(), result.getVector(), size);
     return result;
 }
+GVector GVector::operator*(float value)
+{
+    GVector result(this->size);
+    CudaLaunchers::vectorValueMultiplication(this->vector, result.getVector(), value, this->size);
+    return result;
+}
 
 GVector GVector::operator/(double v)
 {
