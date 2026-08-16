@@ -62,9 +62,9 @@ void NNG::setLabels(float *labels)
     this->labels = labels;
 }
 
-double NNG::sumCrossEntropyLoss()
+float NNG::sumCrossEntropyLoss()
 {
-    // return executeCrossEntropyLoss(y_hat.matrix, labels, SIZE_TRAINING_DATA);
+    return CudaLaunchers::sumCrossEntropyLoss(y_hat.getMatrix(), labels, SIZE_TRAINING_DATA);
 }
 int NNG::argmax(const double *vec, int size)
 {

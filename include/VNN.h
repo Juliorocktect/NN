@@ -69,7 +69,7 @@ public:
     void backpropagateFirstLayer();
     void updateWeightsAndBiases();
     void initilizeYMatrix(float *pLabels);
-    double sumCrossEntropyLoss();
+    float sumCrossEntropyLoss();
     // int calcAccuracy(float *inputData);
     int argmax(const double *vec, int size);
 };

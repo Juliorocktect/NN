@@ -17,18 +17,15 @@ int main(int argc, char const *argv[])
 
     float *images = ImagePreProcessor::loadImageAsFLoat(40000);
     n->setInputData(images);
-    n->forwardProp();
-    n->backpropagateOutputLayer();
-    //    for (int i = 0; i < 15; i++)
-    //{
-    //    n->forwardProp();
-    //     n->backpropagateOutputLayer();
-    //     n->backpropagateThirdLayer();
-    //     n->backpropagateSecondLayer();
-    //     n->backpropagateFirstLayer();
-    //     n->updateWeightsAndBiases();
-    //   }
-    //    int c = n->calcAccuracy(ImagePreProcessor::loadImages());
-    //    std::cout << (double) c/20.000;
+    for (int i = 0; i < 20000; i++)
+    {
+        n->forwardProp();
+        n->backpropagateOutputLayer();
+        n->backpropagateThirdLayer();
+        n->backpropagateFirstLayer();
+        n->updateWeightsAndBiases();
+    }
+
+    // TODO:calc accuaracy and loss
     return 0;
 }
