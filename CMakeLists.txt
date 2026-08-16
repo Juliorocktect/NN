@@ -66,7 +66,7 @@ CUDA_RESOLVE_DEVICE_SYMBOLS ON
 
 #build test envoirenment
 find_package(GTest REQUIRED)
-add_executable(nn_tests tests/test_main.cpp ${TEST_FILES})
+add_executable(nn_tests ${TEST_FILES})
 target_compile_features(nn_tests PRIVATE cxx_std_17)
 set_target_properties(nn_tests PROPERTIES
     LINKER_LANGUAGE CXX

@@ -1,4 +1,3 @@
-#include "Maths.h"
 #include "CudaLaunchers.cuh"
 #include "CudaKernels.cuh"
 

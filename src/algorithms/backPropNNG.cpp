@@ -4,7 +4,6 @@ void NNG::backpropagateOutputLayer()
 {
     // printGreen("Starte BackProp");
     double e = sumCrossEntropyLoss();
-    std::cout << e << std::endl;
     dE_dYHAT = y_hat - y;
     GMatrix A3_t = A3.transpose();
     dW4 = dE_dYHAT * A3_t;
