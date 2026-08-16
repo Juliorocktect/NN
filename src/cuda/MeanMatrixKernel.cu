@@ -1,28 +1,29 @@
 #include "Maths.h"
+#include "CudaKernels.cuh"
+#include "CudaLaunchers.cuh"
 
-double* executeMeanMatrixKernel(double* mat, int rows, int cols)
+double *executeMeanMatrixKernel(double *mat, int rows, int cols)
 {
-    double* d_mat_result;
-    double* d_mat;
+    double *d_mat_result;
+    double *d_mat;
     size_t size = rows * cols * sizeof(double);
     int n = rows * cols;
-    double* h_res = new double[n];
-    cudaMalloc((void**)&d_mat, size);
-    cudaMalloc((void**)&d_mat_result, size);
+    double *h_res = new double[n];
+    cudaMalloc((void **)&d_mat, size);
+    cudaMalloc((void **)&d_mat_result, size);
 
     int threadsPerBlock = 256;
     int blocksPerGrid = (n + threadsPerBlock - 1) / threadsPerBlock;
 
-    meanMatrixKernel << <threadsPerBlock, blocksPerGrid >> > (d_mat, d_mat_result, rows, cols);
+    meanMatrixKernel<<<threadsPerBlock, blocksPerGrid>>>(d_mat, d_mat_result, rows, cols);
     cudaDeviceSynchronize();
     cudaMemcpy(h_res, d_mat_result, size, cudaMemcpyDeviceToHost);
 
     cudaFree(&d_mat_result);
     cudaFree(&d_mat);
     return h_res;
-
 }
-__global__ void meanMatrixKernel(const double* mat, double* resultMatrix, int rows, int cols)
+__global__ void meanMatrixKernel(const double *mat, double *resultMatrix, int rows, int cols)
 {
     int row = blockIdx.x * blockDim.x + threadIdx.x;
     if (row < rows)
@@ -34,4 +35,26 @@ __global__ void meanMatrixKernel(const double* mat, double* resultMatrix, int ro
         }
         resultMatrix[row] = sum / cols;
     }
+}
+
+__global__ void CudaKernels::meanMatrixRowise(float *mat, float *matResult, size_t rows, size_t cols)
+{
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < rows)
+    {
+        float sum = 0.0;
+        for (int col = 0; col < cols; ++col)
+        {
+            sum += mat[idx * cols + col];
+        }
+        matResult[idx] = sum / cols;
+    }
+}
+
+void CudaLaunchers::meanMatrixRowise(float *mat, float *matResult, size_t rows, size_t cols)
+{
+    int threadsPerBlock = 512;
+    int blocksPerGrid = (rows * cols + threadsPerBlock - 1) / threadsPerBlock;
+    CudaKernels::meanMatrixRowise<<<threadsPerBlock, blocksPerGrid>>>(mat, matResult, rows, cols);
+    cudaDeviceSynchronize();
 }

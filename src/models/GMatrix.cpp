@@ -202,11 +202,11 @@ GMatrix GMatrix::sigmoid()
     CudaLaunchers::sigmoid(matrix, result.getMatrix(), rows * cols);
     return result;
 }
-void GMatrix::softmax()
+GMatrix GMatrix::softmax()
 {
     GMatrix result(rows, cols);
     CudaLaunchers::softmax(matrix, result.getMatrix(), rows, cols);
-    matrix = result.getMatrix();
+    return result;
 }
 void GMatrix::uploadMatrixToGPU(float *matrix)
 {
@@ -227,4 +227,10 @@ void GMatrix::uploadMatrixToGPU(float *matrix)
         std::cerr << "Fehler beim Kopieren der Matrix: "
                   << cudaGetErrorString(error) << std::endl;
     }
+}
+GVector GMatrix::calcMeanRowise()
+{
+    GVector result(rows);
+    CudaLaunchers::meanMatrixRowise(this->matrix, result.getVector(), rows, cols);
+    return result;
 }

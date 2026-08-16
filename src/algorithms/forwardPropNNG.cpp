@@ -24,6 +24,6 @@ void NNG::forwardProp()
     // Output Layer Calc
     y_hat = (w4 * Z3);
     y_hat = (y_hat + b4);
-    y_hat.softmax();
+    y_hat = y_hat.softmax();
     // printGreen("Output Layer Passed");
 }

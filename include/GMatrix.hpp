@@ -152,7 +152,7 @@ public:
     /**
      * @brief Applies the softmax function to the matrix.
      */
-    void softmax();
+    GMatrix softmax();
 
     /**
      * @brief Prints the matrix values.
@@ -177,5 +177,19 @@ public:
      * @param matrix
      */
     void uploadMatrixToGPU(float *matrix);
+
+    /**
+     * @brief applys softmax deriviative to matrix
+     *
+     * @return GMatrix
+     */
+    GMatrix softMaxDeriviative();
+
+    /**
+     * @brief `calcMeanFromMatrixRowise` calculates the mean value of each row in a matrix. It sums all elements in a row and divides the sum by the number of elements in that row.
+     *
+     * @return GVector rowsx1
+     */
+    GVector calcMeanRowise();
 };
 #endif

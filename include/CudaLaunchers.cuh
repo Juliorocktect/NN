@@ -199,6 +199,16 @@ namespace CudaLaunchers
      * @param size
      */
     void vectorValueMultiplication(float *vec, float *vecResult, float value, size_t size);
+
+    /**
+     * @brief`calcMeanFromMatrixRowise` calculates the mean value of each row in a matrix. It sums all elements in a row and divides the sum by the number of elements in that row.
+     *
+     * @param mat
+     * @param matResult
+     * @param rows
+     * @param cols
+     */
+    void meanMatrixRowise(float *mat, float *matResult, size_t rows, size_t cols);
 };
 
 #endif

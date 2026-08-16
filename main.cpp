@@ -25,7 +25,6 @@ int main(int argc, char const *argv[])
         n->backpropagateFirstLayer();
         n->updateWeightsAndBiases();
     }
-
     // TODO:calc accuaracy and loss
     return 0;
 }
