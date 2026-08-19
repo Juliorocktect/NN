@@ -77,6 +77,7 @@ namespace CudaLaunchers
      * @return float*
      */
     void vectorSubtraction(const float *vec1, const float *vec2, float *vecResult, size_t size);
+
     /**
      * @brief Cuda launcher for summing cross-entropy loss kernel
      *  Sum Cross-Entropy Loss is a common loss function used in machine learning for classification tasks. It measures the difference between the predicted probability distribution and the true distribution (targets). The formula for cross-entropy loss is:
@@ -87,6 +88,7 @@ namespace CudaLaunchers
      * @param size
      * @return float*
      */
+
     float *sumCrossEntropyLoss(const float *predictions, const float *targets, float *loss, size_t size);
     /**
      * @brief Cuda launcher for matrix transpose kernel
@@ -98,6 +100,7 @@ namespace CudaLaunchers
      * @return float*
      */
     float *transposeMatrix(const float *mat, float *matResult, int rows, int cols);
+
     /**
      * @brief Cuda launcher for argmax kernel
      *
@@ -107,9 +110,10 @@ namespace CudaLaunchers
      * @param rows
      * @param cols
      * @param result
-     * @return float*
+     * @return float* vector with the size of cols
      */
-    float *argmax(const float *mat, int rows, int cols, float *result);
+    void argmax(const float *mat, int rows, int cols, float *result);
+
     /**
      * @brief Cuda launcher for matrix transpose kernel
      *

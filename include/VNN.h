@@ -12,7 +12,7 @@
 #define SIZE_SECOND_LAYER 200
 #define SIZE_THIRD_LAYER 180
 #define SIZE_TRAINING_DATA 40000
-#define LEARNING_RATE 0.01
+#define LEARNING_RATE 0.0001
 
 double sigmoid(double x);
 class NNG
@@ -70,7 +70,7 @@ public:
     void updateWeightsAndBiases();
     void initilizeYMatrix(float *pLabels);
     float sumCrossEntropyLoss();
-    // int calcAccuracy(float *inputData);
+    float calcAccuracy(float *testData, size_t sizeTestData);
     int argmax(const double *vec, int size);
 };
 #endif

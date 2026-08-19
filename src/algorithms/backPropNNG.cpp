@@ -2,18 +2,15 @@
 
 void NNG::backpropagateOutputLayer()
 {
-    // printGreen("Starte BackProp");
     float e = sumCrossEntropyLoss();
     std::cout << e << std::endl;
     dE_dYHAT = y_hat - y;
     GMatrix A3_t = A3.transpose();
     dW4 = dE_dYHAT * A3_t;
-    // printGreen("Output Layer Backpropagated");
 }
 
 void NNG::backpropagateThirdLayer()
 {
-    // printGreen("Starte Ableitung Layer 3");
     GMatrix w4_t = w4.transpose(); // 180x10
     GMatrix dA3 = w4_t * dE_dYHAT; // 10x10
     dYHAT_dZ3 = Z3.sigmoidDeriviative();
@@ -21,12 +18,10 @@ void NNG::backpropagateThirdLayer()
     GMatrix Z2_t = Z2.transpose();
     dW3 = (dYHAT_dZ3 * Z2_t) / SIZE_TRAINING_DATA;
     db3 = dYHAT_dZ3.calcMeanRowise();
-    //  printGreen("Layer 3 derived");
 }
 
 void NNG::backpropagateSecondLayer()
 {
-    // printGreen("Starte Ableitung Layer 2");
     GMatrix w3_t = w3.transpose();
     GMatrix dA2 = w3_t * dYHAT_dZ3;
     dZ2 = Z2.sigmoidDeriviative();
@@ -34,11 +29,9 @@ void NNG::backpropagateSecondLayer()
     GMatrix Z1_t = Z1.transpose();
     dW2 = (dZ2 * Z1_t) / SIZE_TRAINING_DATA;
     db2 = dZ2.calcMeanRowise();
-    //  printGreen("Layer 2 derived");
 }
 void NNG::backpropagateFirstLayer()
 {
-    // printGreen("Starte Ableitung Layer 1");
     GMatrix A1_t = A1.transpose();
     GMatrix w2_t = w2.transpose();
     GMatrix dA1 = w2_t * dZ2;
@@ -47,12 +40,9 @@ void NNG::backpropagateFirstLayer()
     GMatrix input_t = inputData.transpose();
     dW1 = (dZ1 * input_t) / SIZE_TRAINING_DATA;
     db1 = dZ1.calcMeanRowise();
-    //  printGreen("Layer 1 derived");
 }
 void NNG::updateWeightsAndBiases()
 {
-    // printGreen("Updating Weights");
-    // Update weights
     GMatrix tmpW4 = (dW4 * LEARNING_RATE);
     w4 = w4 - tmpW4;
     tmpW4.~GMatrix();

@@ -80,50 +80,18 @@ int NNG::argmax(const double *vec, int size)
     }
     return maxIdx;
 }
-/* int NNG::calcAccuracy(double *inputData)
+float NNG::calcAccuracy(float *testData, size_t sizeTestData)
 {
-    const int sizeUnusedImages = 60000 - SIZE_TRAINING_DATA;
-    GMatrix unusedImaged(784, sizeUnusedImages);
-    double m[sizeUnusedImages];
-    std::copy(inputData + SIZE_TRAINING_DATA, inputData + 60000, m); // copy images from files into matrix
-    unusedImaged.matrix = m;
-    std::cout << "Executed copy of Matrix\n";
-    // Feed Through net
-    Z1 = (w1 * unusedImaged);
-    Z1.addVectorColwise(b1); //+ finished implementing?
-    A1 = Z1.sigmoid();
-    // printGreen("Layer 1 Passed");
+    this->inputData.setCols(sizeTestData);
+    this->inputData.setMatrix(testData);
 
-    // Layer 2 Calc
-    Z2 = (w2 * Z1);
-    Z2 = Z2 + b2;
-    A2 = Z2.sigmoid();
-    // printGreen("Layer 2 Passed");
-
-    // Layer 3 Calc
-    Z3 = (w3 * Z2);
-    Z3.addVectorColwise(Z3);
-    A3 = Z3.sigmoid();
-    // printGreen("Layer 3 Passed");
-    // Output Layer Calc
-    y_hat = (w4 * Z3);
-    y_hat.addVectorColwise(b4);
-    y_hat.softmax();
-    std::cout << "Feed through network\n";
-    // execute Argmax Function
-    double *matRes = new double[sizeUnusedImages]; // Predections of NN per picture
-    matRes = executeArgmaxKernel(y_hat.matrix, y_hat.rows, y_hat.cols);
-    std::cout << "Executed ArgmaxKernel\n";
-    std::cout << matRes[12] << std::endl;
-    std::cout << labels[8756] << std::endl;
-    int correct = 0;
-    for (int i = 0; i < sizeUnusedImages; i++) // Muss GPUOptimiert Werden//TODO:Probleme beim Lesen von labels falscher speicher zugriff
-    {
-        int predicted = matRes[i];
-        int actual = labels[SIZE_TRAINING_DATA + i];
-        if (predicted == actual)
-            correct++;
-    }
-    delete[] matRes;
-    return correct;
-} */
+    this->forwardProp();
+    this->backpropagateOutputLayer();
+    this->backpropagateThirdLayer();
+    this->backpropagateFirstLayer();
+    this->printGreen("Feed Through finished with test data");
+    // execute Argmax
+    GVector argmaxResult(y.getCols());
+    CudaLaunchers::argmax(y.getMatrix(), y.getRows(), y.getCols(), argmaxResult.getVector());
+    // calculate loss
+}

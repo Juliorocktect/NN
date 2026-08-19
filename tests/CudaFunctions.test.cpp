@@ -108,3 +108,127 @@ TEST(CudaLaunchersHotEncodeYMatrixTest, EncodesEveryClassCorrectly)
     cudaFree(labels_d);
     cudaFree(result_d);
 }
+
+TEST(CudaLaunchersArgmaxTest, ReturnsCorrectIndicesForSingleColumn)
+{
+    const int rows = 5;
+    const int cols = 1;
+    std::vector<float> mat_h = {1.5f, 3.2f, 2.1f, 0.8f, 4.5f};
+    std::vector<float> expected = {4.0f}; // Index des maximalen Wertes (4.5f)
+
+    float *mat_d = nullptr;
+    float *result_d = nullptr;
+    cudaMalloc(&mat_d, rows * cols * sizeof(float));
+    cudaMalloc(&result_d, cols * sizeof(float));
+    cudaMemset(result_d, 0, cols * sizeof(float));
+    cudaMemcpy(mat_d, mat_h.data(), rows * cols * sizeof(float), cudaMemcpyHostToDevice);
+
+    CudaLaunchers::argmax(mat_d, rows, cols, result_d);
+
+    std::vector<float> result_h(cols);
+    cudaMemcpy(result_h.data(), result_d, cols * sizeof(float), cudaMemcpyDeviceToHost);
+
+    EXPECT_EQ(cudaGetLastError(), cudaSuccess);
+    EXPECT_EQ(result_h[0], expected[0]);
+
+    cudaFree(mat_d);
+    cudaFree(result_d);
+}
+
+TEST(CudaLaunchersArgmaxTest, ReturnsCorrectIndicesForMultipleColumns)
+{
+    const int rows = 4;
+    const int cols = 3;
+    // Matrix: 4x3 (4 Zeilen, 3 Spalten)
+    // Spalte 0: [1.0, 5.0, 2.0, 3.0] -> argmax = 1
+    // Spalte 1: [2.0, 3.0, 1.0, 4.0] -> argmax = 3
+    // Spalte 2: [6.0, 1.0, 2.0, 3.0] -> argmax = 0
+    std::vector<float> mat_h = {
+        1.0f, 2.0f, 6.0f,
+        5.0f, 3.0f, 1.0f,
+        2.0f, 1.0f, 2.0f,
+        3.0f, 4.0f, 3.0f};
+    std::vector<float> expected = {1.0f, 3.0f, 0.0f};
+
+    float *mat_d = nullptr;
+    float *result_d = nullptr;
+    cudaMalloc(&mat_d, rows * cols * sizeof(float));
+    cudaMalloc(&result_d, cols * sizeof(float));
+    cudaMemset(result_d, 0, cols * sizeof(float));
+    cudaMemcpy(mat_d, mat_h.data(), rows * cols * sizeof(float), cudaMemcpyHostToDevice);
+
+    CudaLaunchers::argmax(mat_d, rows, cols, result_d);
+
+    std::vector<float> result_h(cols);
+    cudaMemcpy(result_h.data(), result_d, cols * sizeof(float), cudaMemcpyDeviceToHost);
+
+    EXPECT_EQ(cudaGetLastError(), cudaSuccess);
+    for (int i = 0; i < cols; ++i)
+    {
+        EXPECT_EQ(result_h[i], expected[i]);
+    }
+
+    cudaFree(mat_d);
+    cudaFree(result_d);
+}
+
+TEST(CudaLaunchersArgmaxTest, HandlesNegativeValues)
+{
+    const int rows = 3;
+    const int cols = 2;
+    // Spalte 0: [-5.0, -2.0, -10.0] -> argmax = 1 (max ist -2.0)
+    // Spalte 1: [-1.0, -3.0, -2.0] -> argmax = 0 (max ist -1.0)
+    std::vector<float> mat_h = {
+        -5.0f, -1.0f,
+        -2.0f, -3.0f,
+        -10.0f, -2.0f};
+    std::vector<float> expected = {1.0f, 0.0f};
+
+    float *mat_d = nullptr;
+    float *result_d = nullptr;
+    cudaMalloc(&mat_d, rows * cols * sizeof(float));
+    cudaMalloc(&result_d, cols * sizeof(float));
+    cudaMemset(result_d, 0, cols * sizeof(float));
+    cudaMemcpy(mat_d, mat_h.data(), rows * cols * sizeof(float), cudaMemcpyHostToDevice);
+
+    CudaLaunchers::argmax(mat_d, rows, cols, result_d);
+
+    std::vector<float> result_h(cols);
+    cudaMemcpy(result_h.data(), result_d, cols * sizeof(float), cudaMemcpyDeviceToHost);
+
+    EXPECT_EQ(cudaGetLastError(), cudaSuccess);
+    for (int i = 0; i < cols; ++i)
+    {
+        EXPECT_EQ(result_h[i], expected[i]);
+    }
+
+    cudaFree(mat_d);
+    cudaFree(result_d);
+}
+
+TEST(CudaLaunchersArgmaxTest, ReturnsZeroForFirstMaxWhenMultipleMaxima)
+{
+    const int rows = 3;
+    const int cols = 1;
+    // Spalte: [5.0, 8.0, 2.0] -> argmax = 2 (erster Index mit Max)
+    std::vector<float> mat_h = {0.0f, 5.0f, 8.0f};
+    std::vector<float> expected = {2.0f};
+
+    float *mat_d = nullptr;
+    float *result_d = nullptr;
+    cudaMalloc(&mat_d, rows * cols * sizeof(float));
+    cudaMalloc(&result_d, cols * sizeof(float));
+    cudaMemset(result_d, 0, cols * sizeof(float));
+    cudaMemcpy(mat_d, mat_h.data(), rows * cols * sizeof(float), cudaMemcpyHostToDevice);
+
+    CudaLaunchers::argmax(mat_d, rows, cols, result_d);
+
+    std::vector<float> result_h(cols);
+    cudaMemcpy(result_h.data(), result_d, cols * sizeof(float), cudaMemcpyDeviceToHost);
+
+    EXPECT_EQ(cudaGetLastError(), cudaSuccess);
+    EXPECT_EQ(result_h[0], expected[0]);
+
+    cudaFree(mat_d);
+    cudaFree(result_d);
+}
