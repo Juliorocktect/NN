@@ -9,21 +9,25 @@
 
 int main(int argc, char const *argv[])
 {
-    NNG *n = new NNG();
-    std::vector<float> lbl = ImagePreProcessor::readLabelsAsFloat();
-    std::cout << lbl.at(9023) << std::endl;
+    /*  NNG *n = new NNG();
+     std::vector<float> lbl = ImagePreProcessor::readLabelsAsFloat();
+     std::cout << lbl.at(9023) << std::endl;
 
-    n->initilizeYMatrix(lbl.data());
+     n->initilizeYMatrix(lbl.data());
 
-    float *images = ImagePreProcessor::loadImageAsFLoat(40000);
-    n->setInputData(images);
-    for (int i = 0; i < 20000; i++)
+     float *images = ImagePreProcessor::loadImageAsFLoat(40000);
+     n->setInputData(images);
+     for (int i = 0; i < 20000; i++)
+     {
+         n->forwardProp();
+         n->backpropagateOutputLayer();
+         n->backpropagateThirdLayer();
+         n->backpropagateFirstLayer();
+         n->updateWeightsAndBiases();
+     } */
+    if (-10.0f < -2.0f)
     {
-        n->forwardProp();
-        n->backpropagateOutputLayer();
-        n->backpropagateThirdLayer();
-        n->backpropagateFirstLayer();
-        n->updateWeightsAndBiases();
+        std::cout << "Executed" << std::endl;
     }
     // TODO:calc accuaracy and loss
     return 0;

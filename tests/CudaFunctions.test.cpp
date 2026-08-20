@@ -139,10 +139,11 @@ TEST(CudaLaunchersArgmaxTest, ReturnsCorrectIndicesForMultipleColumns)
 {
     const int rows = 4;
     const int cols = 3;
-    // Matrix: 4x3 (4 Zeilen, 3 Spalten)
-    // Spalte 0: [1.0, 5.0, 2.0, 3.0] -> argmax = 1
-    // Spalte 1: [2.0, 3.0, 1.0, 4.0] -> argmax = 3
-    // Spalte 2: [6.0, 1.0, 2.0, 3.0] -> argmax = 0
+    // 10x...
+    //  Matrix: 4x3 (4 Zeilen, 3 Spalten)
+    //  Spalte 0: [1.0, 5.0, 2.0, 3.0] -> argmax = 1
+    //  Spalte 1: [2.0, 3.0, 1.0, 4.0] -> argmax = 3
+    //  Spalte 2: [6.0, 1.0, 2.0, 3.0] -> argmax = 0
     std::vector<float> mat_h = {
         1.0f, 2.0f, 6.0f,
         5.0f, 3.0f, 1.0f,
