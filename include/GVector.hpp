@@ -21,6 +21,7 @@ public:
     void setSize(size_t newSize);
     float *getVector();
     void setVector(float *newVector);
+    void upload(float *vector);
     GVector &operator=(const GVector &other);
     GVector &operator=(GVector &&other) noexcept;
     GVector operator+(GVector &other);

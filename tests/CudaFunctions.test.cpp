@@ -3,6 +3,7 @@
 #include <cmath>
 #include <numeric>
 #include <vector>
+#include "GVector.hpp"
 #include "CudaLaunchers.cuh"
 
 TEST(CudaCrossEntropyLossTest, ComputesMeanLossForSingleSample)
@@ -11,8 +12,12 @@ TEST(CudaCrossEntropyLossTest, ComputesMeanLossForSingleSample)
     std::vector<float> y_hat(10, 0.0f);
     y_hat[1] = 0.9f;
     std::vector<float> labels = {1.0f};
+    GVector y_hat_d(y_hat.size());
+    GVector labels_d(labels.size());
+    y_hat_d.upload(y_hat.data());
+    labels_d.upload(labels.data());
 
-    float loss = CudaLaunchers::sumCrossEntropyLoss(y_hat.data(), labels.data(), numSamples);
+    float loss = CudaLaunchers::sumCrossEntropyLoss(y_hat_d.getVector(), labels_d.getVector(), numSamples);
     float expected = -std::log(0.9f);
 
     EXPECT_NEAR(loss, expected, 1e-5f);
@@ -26,8 +31,12 @@ TEST(CudaCrossEntropyLossTest, ComputesMeanLossForMultipleSamples)
     y_hat[0 * 10 + 0] = 0.9f; // sample 0, class 0
     y_hat[1 * 10 + 2] = 0.8f; // sample 1, class 2
     std::vector<float> labels = {0.0f, 2.0f};
+    GVector y_hat_d(y_hat.size());
+    GVector labels_d(labels.size());
+    y_hat_d.upload(y_hat.data());
+    labels_d.upload(labels.data());
 
-    float loss = CudaLaunchers::sumCrossEntropyLoss(y_hat.data(), labels.data(), numSamples);
+    float loss = CudaLaunchers::sumCrossEntropyLoss(y_hat_d.getVector(), labels_d.getVector(), numSamples);
     float expected = (-std::log(0.9f) - std::log(0.8f)) / 2.0f;
 
     EXPECT_NEAR(loss, expected, 1e-5f);
@@ -41,8 +50,12 @@ TEST(CudaCrossEntropyLossTest, ReturnsZeroForInvalidLabel)
     y_hat[0 * 10 + 0] = 0.7f; // sample 0, class 0
     y_hat[1 * 10 + 1] = 0.6f; // sample 1, class 1
     std::vector<float> labels = {0.0f, 10.0f};
+    GVector y_hat_d(y_hat.size());
+    GVector labels_d(labels.size());
+    y_hat_d.upload(y_hat.data());
+    labels_d.upload(labels.data());
 
-    float loss = CudaLaunchers::sumCrossEntropyLoss(y_hat.data(), labels.data(), numSamples);
+    float loss = CudaLaunchers::sumCrossEntropyLoss(y_hat_d.getVector(), labels_d.getVector(), numSamples);
     float expected = (-std::log(0.7f) + 0.0f) / 2.0f;
 
     EXPECT_NEAR(loss, expected, 1e-5f);

@@ -73,6 +73,21 @@ void GVector::setVector(float *newVector)
     }
 }
 
+void GVector::upload(float *hostVector)
+{
+    if (size == 0)
+    {
+        return;
+    }
+
+    if (hostVector == nullptr)
+    {
+        throw std::invalid_argument("Cannot upload a null vector");
+    }
+
+    cudaMemcpy(vector, hostVector, size * sizeof(float), cudaMemcpyHostToDevice);
+}
+
 GVector &GVector::operator=(const GVector &other)
 {
     if (this == &other)

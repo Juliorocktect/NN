@@ -53,10 +53,12 @@ __global__ void CudaKernels::crossEntropyLossKernel(const float *y_hat, const fl
         int label = static_cast<int>(labels[idx]);
         if (label >= 0 && label < 10)
         {
-            double val = y_hat[label + idx * 10]; // Spaltenweise: label + idx*10
+            float val = y_hat[label + idx * 10];
             if (val <= 0.0)
-                val = 1e-8; // Schutz vor log(0)
-            loss[idx] = -log(val);
+            {
+                val = 1e-8f;
+            }
+            loss[idx] = -logf(val);
         }
         else
         {
@@ -67,15 +69,18 @@ __global__ void CudaKernels::crossEntropyLossKernel(const float *y_hat, const fl
 
 float CudaLaunchers::sumCrossEntropyLoss(const float *y_hat, const float *labels, int numSamples)
 {
+    if (y_hat == nullptr || labels == nullptr || numSamples <= 0)
+        return 0.0f;
+
     int threadsPerBlock = 512;
     int blocksPerGrid = (numSamples + threadsPerBlock - 1) / threadsPerBlock;
     float *h_loss = new float[numSamples];
     float *d_loss;
-    size_t sizeYHAT = 10 * numSamples * sizeof(double);
     cudaMalloc((void **)&d_loss, numSamples * sizeof(float));
+
     CudaKernels::crossEntropyLossKernel<<<blocksPerGrid, threadsPerBlock>>>(y_hat, labels, d_loss, numSamples);
     cudaDeviceSynchronize();
-    cudaMemcpy(h_loss, d_loss, numSamples * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_loss, d_loss, numSamples * sizeof(float), cudaMemcpyDeviceToHost);
     float sum = 0.0;
     for (int i = 0; i < numSamples; ++i)
         sum += h_loss[i];

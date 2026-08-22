@@ -21,7 +21,7 @@ int main(int argc, char const *argv[])
 
     float *testImages = ImagePreProcessor::loadImageTestData(10000);
     float *testLabels = ImagePreProcessor::readTestLabels();
-    n->calcAccuracy(testImages, testLabels, 10000);
+    // n->calcAccuracy(testImages, testLabels, 10000);
     // TODO:calc accuaracy and loss
 
     return 0;

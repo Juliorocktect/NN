@@ -34,6 +34,7 @@ NNG::NNG()
     dW2 = GMatrix(200, 480);
     dW1 = GMatrix(480, 784);
     inputData = GMatrix(784, SIZE_TRAINING_DATA);
+    labels = GVector(SIZE_TRAINING_DATA);
 }
 NNG::NNG(size_t sizeTrainingData)
 {
@@ -73,7 +74,6 @@ NNG::NNG(size_t sizeTrainingData)
 }
 NNG::~NNG()
 {
-    free(labels);
 }
 void NNG::setInputData(float *mat)
 {
@@ -89,18 +89,18 @@ void NNG::printRed(const char *text)
 }
 void NNG::initilizeYMatrix(float *pLabels)
 {
-    this->labels = pLabels;
+    this->labels.upload(pLabels);
     // y muss mit 0 initialisiert sein!
     CudaLaunchers::hotEncodeYMatrix(pLabels, y.getMatrix(), SIZE_TRAINING_DATA);
 }
 void NNG::setLabels(float *labels)
 {
-    this->labels = labels;
+    this->labels.upload(labels);
 }
 
 float NNG::sumCrossEntropyLoss()
 {
-    return CudaLaunchers::sumCrossEntropyLoss(y_hat.getMatrix(), labels, SIZE_TRAINING_DATA);
+    return CudaLaunchers::sumCrossEntropyLoss(y_hat.getMatrix(), labels.getVector(), SIZE_TRAINING_DATA);
 }
 int NNG::argmax(const double *vec, int size)
 {
@@ -130,7 +130,7 @@ void NNG::run(size_t times)
 float NNG::calcAccuracy(float *testData, float *testLabels, size_t sizeTestData)
 {
     NNG testNetwork(sizeTestData);
-    testNetwork.initilizeYMatrix(labels);
+    testNetwork.initilizeYMatrix(testLabels);
     testNetwork.setInputData(testData);
     testNetwork.run(1);
     this->printGreen("Feed Through finished with test data");
@@ -138,4 +138,5 @@ float NNG::calcAccuracy(float *testData, float *testLabels, size_t sizeTestData)
     GVector argmaxResult(y.getCols());
     CudaLaunchers::argmax(y.getMatrix(), y.getRows(), y.getCols(), argmaxResult.getVector());
     // calculate loss
+    return 0.0f;
 }

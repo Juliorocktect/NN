@@ -56,7 +56,8 @@ private:
     GMatrix dW2;       // Derivation of weights Layer 2 200x480
     GMatrix dW3;       // Derivation of weights Layer 3 180x200
     GMatrix dW4;       // Derivation of weights Output Layer 4 10x180
-    float *labels;     // 60.000 labels to the 60.000 images
+    GVector labels;    // 60.000 labels to the 60.000 images points to gpu
+
 public:
     NNG();
     NNG(size_t sizeTrainingData);
@@ -69,6 +70,11 @@ public:
     void backpropagateSecondLayer();
     void backpropagateFirstLayer();
     void updateWeightsAndBiases();
+    /**
+     * @brief copies to GPU & hot Encodes the Vector to the Y Matrix
+     *
+     * @param pLabels pointer to labels in RAM
+     */
     void initilizeYMatrix(float *pLabels);
     float sumCrossEntropyLoss();
     float calcAccuracy(float *testData, float *testLabels, size_t sizeTestData);

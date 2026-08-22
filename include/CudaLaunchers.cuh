@@ -176,9 +176,9 @@ namespace CudaLaunchers
     /**
      * @brief
      *
-     * @param y_hat
-     * @param labels
-     * @param numSamples
+     * @param y_hat 10xSIZE_TRAINING_DATA
+     * @param labels 10xSIZE_TRAINING_DATA
+     * @param numSamples SIZE_TRAINING_DATA
      * @return float
      */
     float sumCrossEntropyLoss(const float *y_hat, const float *labels, int numSamples);
