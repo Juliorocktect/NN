@@ -163,6 +163,72 @@ namespace ImagePreProcessor
         return labels;
     }
 
+    float *loadImageTestData(size_t imageCount)
+    {
+        std::ifstream imageFile(IMAGE_TEST_PATH, std::ios::binary);
+        if (!imageFile)
+            throw std::runtime_error("Unable to open image file");
+
+        int magic = readInt(imageFile);
+        if (magic != 2051)
+            throw std::runtime_error("Invalid image file!");
+
+        int numImages = readInt(imageFile);
+        int rows = readInt(imageFile);
+        int cols = readInt(imageFile);
+
+        if (numImages <= 0 || rows <= 0 || cols <= 0)
+            throw std::runtime_error("Invalid image metadata: dimensions must be positive");
+
+        const size_t requestedImages = (imageCount == 0)
+                                           ? static_cast<size_t>(numImages)
+                                           : std::min<size_t>(imageCount, static_cast<size_t>(numImages));
+
+        const size_t imageStride = static_cast<size_t>(rows) * static_cast<size_t>(cols);
+        const size_t totalSize = requestedImages * imageStride;
+        float *images = new float[totalSize]();
+        std::vector<uint8_t> buffer(imageStride);
+
+        for (size_t i = 0; i < requestedImages; ++i)
+        {
+            if (!imageFile.read(reinterpret_cast<char *>(buffer.data()), static_cast<std::streamsize>(imageStride)))
+            {
+                delete[] images;
+                throw std::runtime_error("Failed to read image block");
+            }
+
+            for (size_t j = 0; j < imageStride; ++j)
+            {
+                images[i * imageStride + j] = static_cast<float>(buffer[j]) / 255.0f;
+            }
+        }
+
+        return images;
+    }
+    float *readTestLabels()
+    {
+        std::ifstream file(LABEL_PATH, std::ios::binary);
+        if (!file)
+            throw std::runtime_error("Unable to open label file");
+
+        int magic = readInt(file);
+        if (magic != 2049)
+            throw std::runtime_error("Invalid label file");
+
+        int numLabels = readInt(file);
+
+        std::vector<uint8_t> raw(numLabels);
+        file.read(reinterpret_cast<char *>(raw.data()), numLabels);
+
+        if (!file)
+            throw std::runtime_error("Failed to read labels");
+
+        std::vector<float> labels(numLabels);
+        for (int i = 0; i < numLabels; ++i)
+            labels[i] = static_cast<float>(raw[i]);
+        return labels.data();
+    }
+
     void showImage(const std::vector<uint8_t> &pixels, int width, int height)
     {
         SDL_Init(SDL_INIT_VIDEO);
@@ -196,6 +262,26 @@ namespace ImagePreProcessor
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
+    }
+
+    void showImage(const float *pixels, int width, int height)
+    {
+        if (pixels == nullptr || width <= 0 || height <= 0)
+            throw std::invalid_argument("Invalid image data or dimensions");
+
+        std::vector<uint8_t> bytePixels(static_cast<size_t>(width) * static_cast<size_t>(height));
+        for (size_t i = 0; i < bytePixels.size(); ++i)
+        {
+            float value = pixels[i];
+            if (value < 0.0f)
+                value = 0.0f;
+            else if (value > 1.0f)
+                value = 1.0f;
+
+            bytePixels[i] = static_cast<uint8_t>(value * 255.0f);
+        }
+
+        showImage(bytePixels, width, height);
     }
 
 };

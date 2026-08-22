@@ -11,7 +11,6 @@
 #define SIZE_FIRST_LAYER 480
 #define SIZE_SECOND_LAYER 200
 #define SIZE_THIRD_LAYER 180
-#define SIZE_TRAINING_DATA 40000
 #define LEARNING_RATE 0.0001
 
 double sigmoid(double x);
@@ -21,6 +20,7 @@ private:
     void printGreen(const char *text);
     void printRed(const char *text);
     double costF();
+    size_t SIZE_TRAINING_DATA;
 
     GMatrix inputData; // 784xSIZE_TRAINING_DATA
     // Weights
@@ -59,6 +59,7 @@ private:
     float *labels;     // 60.000 labels to the 60.000 images
 public:
     NNG();
+    NNG(size_t sizeTrainingData);
     ~NNG();
     void setInputData(float *mat);
     void setLabels(float *labels);
@@ -70,7 +71,8 @@ public:
     void updateWeightsAndBiases();
     void initilizeYMatrix(float *pLabels);
     float sumCrossEntropyLoss();
-    float calcAccuracy(float *testData, size_t sizeTestData);
+    float calcAccuracy(float *testData, float *testLabels, size_t sizeTestData);
     int argmax(const double *vec, int size);
+    void run(size_t times);
 };
 #endif

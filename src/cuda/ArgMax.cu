@@ -21,6 +21,15 @@ double *executeArgmaxKernel(const double *mat, int rows, int cols)
     cudaFree(d_vec_res);
     return h_mat_res;
 }
+/**
+ * @brief ist btw falsh
+ *
+ * @param mat
+ * @param mat_result
+ * @param rows
+ * @param cols
+ * @return __global__
+ */
 __global__ void argmaxKernel(const double *mat, double *mat_result, int rows, int cols)
 {
     int col = blockIdx.x;
