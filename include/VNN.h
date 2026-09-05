@@ -78,7 +78,6 @@ public:
     void initilizeYMatrix(float *pLabels);
     float sumCrossEntropyLoss();
     float calcAccuracy(float *testData, float *testLabels, size_t sizeTestData);
-    int argmax(const double *vec, int size);
     void run(size_t times);
 };
 #endif

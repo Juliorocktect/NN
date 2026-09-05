@@ -71,6 +71,7 @@ NNG::NNG(size_t sizeTrainingData)
     dW2 = GMatrix(200, 480);
     dW1 = GMatrix(480, 784);
     inputData = GMatrix(784, SIZE_TRAINING_DATA);
+    labels = GVector(SIZE_TRAINING_DATA);
 }
 NNG::~NNG()
 {
@@ -91,7 +92,7 @@ void NNG::initilizeYMatrix(float *pLabels)
 {
     this->labels.upload(pLabels);
     // y muss mit 0 initialisiert sein!
-    CudaLaunchers::hotEncodeYMatrix(pLabels, y.getMatrix(), SIZE_TRAINING_DATA);
+    CudaLaunchers::hotEncodeYMatrix(labels.getVector(), y.getMatrix(), SIZE_TRAINING_DATA);
 }
 void NNG::setLabels(float *labels)
 {
@@ -101,20 +102,6 @@ void NNG::setLabels(float *labels)
 float NNG::sumCrossEntropyLoss()
 {
     return CudaLaunchers::sumCrossEntropyLoss(y_hat.getMatrix(), labels.getVector(), SIZE_TRAINING_DATA);
-}
-int NNG::argmax(const double *vec, int size)
-{
-    int maxIdx = 0;
-    double maxVal = vec[0];
-    for (int i = 1; i < size; ++i)
-    {
-        if (vec[i] > maxVal)
-        {
-            maxVal = vec[i];
-            maxIdx = i;
-        }
-    }
-    return maxIdx;
 }
 void NNG::run(size_t times)
 {

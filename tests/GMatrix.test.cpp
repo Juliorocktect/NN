@@ -18,6 +18,11 @@ void copyToDevice(GMatrix &matrix, const std::vector<float> &values)
     ASSERT_EQ(values.size(), matrix.getRows() * matrix.getCols());
     ASSERT_EQ(cudaMemcpy(matrix.getMatrix(), values.data(), values.size() * sizeof(float), cudaMemcpyHostToDevice), cudaSuccess);
 }
+void copyToDevice(GVector &vector, const std::vector<float> &values)
+{
+    ASSERT_EQ(values.size(), vector.getSize());
+    ASSERT_EQ(cudaMemcpy(vector.getVector(), values.data(), values.size() * sizeof(float), cudaMemcpyHostToDevice), cudaSuccess);
+}
 
 void copyVectorToDeviceForMatrixTest(GVector &vector, const std::vector<float> &values)
 {
@@ -85,7 +90,7 @@ TEST(GMatrixTest, AdditionAddsMatchingMatrices)
 TEST(GMatrixTest, AdditionAddsRowVectorToEachMatrixColumn)
 {
     GMatrix matrix(2, 3);
-    GMatrix vector(1, 2);
+    GVector vector(2);
     copyToDevice(matrix, {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f});
     copyToDevice(vector, {10.0f, 20.0f});
 
@@ -163,9 +168,9 @@ TEST(GMatrixTest, SoftmaxNormalizesEachColumn)
     GMatrix matrix(2, 2);
     copyToDevice(matrix, {1.0f, 2.0f, 3.0f, 4.0f});
 
-    matrix.softmax();
+    GMatrix result = matrix.softmax();
 
-    const std::vector<float> actual = copyToHost(matrix);
+    const std::vector<float> actual = copyToHost(result);
     const std::vector<float> expected{
         0.11920292f,
         0.11920292f,

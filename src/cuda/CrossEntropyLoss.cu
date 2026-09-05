@@ -87,5 +87,8 @@ float CudaLaunchers::sumCrossEntropyLoss(const float *y_hat, const float *labels
     float meanLoss = sum / numSamples;
     delete[] h_loss;
     cudaFree(d_loss);
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
     return meanLoss;
 }

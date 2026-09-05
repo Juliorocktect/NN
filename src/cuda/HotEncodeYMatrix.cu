@@ -16,8 +16,14 @@ __global__ void CudaKernels::hotEncodeToMatrixKernel(float *mat, float *matResul
 }
 void CudaLaunchers::hotEncodeYMatrix(float *mat, float *matResult, size_t size)
 {
-    int threads = 10;
-    dim3 block(size);
-    CudaKernels::hotEncodeToMatrixKernel<<<threads, block>>>(mat, matResult, size);
-    cudaDeviceSynchronize();
+    constexpr int threadsPerBlock = 256;
+    const int blocksPerGrid = (size + threadsPerBlock - 1) / threadsPerBlock;
+
+    CudaKernels::hotEncodeToMatrixKernel<<<blocksPerGrid, threadsPerBlock>>>(mat, matResult, size);
+
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess)
+    {
+        throw std::runtime_error(cudaGetErrorString(error));
+    }
 }

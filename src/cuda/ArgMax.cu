@@ -76,4 +76,7 @@ void CudaLaunchers::argmax(const float *mat, int rows, int cols, float *result)
     int blocksPerGrid = (cols + threadsPerBlock - 1) / threadsPerBlock;
     CudaKernels::argmax<<<blocksPerGrid, threadsPerBlock>>>(mat, rows, cols, result);
     cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
 }

@@ -136,7 +136,7 @@ namespace CudaLaunchers
      */
     float *sigmoidDeriviative(float *mat, float *matResult, size_t size);
     /**
-     * @brief Cuda launcher for vector addition with matrix kernel
+     * @brief Cuda launcher for r addition with matrix kernel
      *
      * @param mat
      * @param vec

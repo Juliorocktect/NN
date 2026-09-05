@@ -16,5 +16,8 @@ float *CudaLaunchers::divide(const float *mat1, double v, float *matResult, size
 
     CudaKernels::matrixDivision<<<blocks, threads>>>(mat1, v, matResult, size);
     cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
     return matResult;
 }
