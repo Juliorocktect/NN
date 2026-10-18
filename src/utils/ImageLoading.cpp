@@ -133,7 +133,7 @@ namespace ImagePreProcessor
 
             for (size_t j = 0; j < imageStride; ++j)
             {
-                images[i * imageStride + j] = static_cast<float>(buffer[j]) / 255.0f;
+                images[j * requestedImages + i] = static_cast<float>(buffer[j]) / 255.0f;
             }
         }
 
@@ -199,34 +199,36 @@ namespace ImagePreProcessor
 
             for (size_t j = 0; j < imageStride; ++j)
             {
-                images[i * imageStride + j] = static_cast<float>(buffer[j]) / 255.0f;
+                images[j * requestedImages + i] = static_cast<float>(buffer[j]) / 255.0f;
             }
         }
 
         return images;
     }
-    float *readTestLabels()
+    std::vector<float> readTestLabels()
     {
-        std::ifstream file(LABEL_PATH, std::ios::binary);
+        std::ifstream file(LABEL_TEST_PATH, std::ios::binary);
         if (!file)
-            throw std::runtime_error("Unable to open label file");
+            throw std::runtime_error("Unable to open test label file");
 
         int magic = readInt(file);
         if (magic != 2049)
-            throw std::runtime_error("Invalid label file");
+            throw std::runtime_error("Invalid test label file");
 
         int numLabels = readInt(file);
+        if (numLabels <= 0)
+            throw std::runtime_error("Invalid test label count");
 
         std::vector<uint8_t> raw(numLabels);
         file.read(reinterpret_cast<char *>(raw.data()), numLabels);
 
         if (!file)
-            throw std::runtime_error("Failed to read labels");
+            throw std::runtime_error("Failed to read test labels");
 
         std::vector<float> labels(numLabels);
         for (int i = 0; i < numLabels; ++i)
             labels[i] = static_cast<float>(raw[i]);
-        return labels.data();
+        return labels;
     }
 
     void showImage(const std::vector<uint8_t> &pixels, int width, int height)

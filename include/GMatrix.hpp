@@ -180,7 +180,7 @@ public:
      *
      * @param matrix
      */
-    void uploadMatrixToGPU(float *matrix);
+    void uploadMatrixToGPU(const float *matrix);
 
     /**
      * @brief applys softmax deriviative to matrix

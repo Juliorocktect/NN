@@ -273,7 +273,7 @@ GMatrix GMatrix::softmax()
     CudaLaunchers::softmax(matrix, result.getMatrix(), rows, cols);
     return result;
 }
-void GMatrix::uploadMatrixToGPU(float *matrix)
+void GMatrix::uploadMatrixToGPU(const float *matrix)
 {
     if (matrix == nullptr || this->matrix == nullptr)
     {

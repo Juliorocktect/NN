@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cmath>
 #include <inttypes.h>
+#include <utility>
 #include <Maths.h>
 #include "GMatrix.hpp"
 #include "GVector.hpp"
@@ -11,7 +12,7 @@
 #define SIZE_FIRST_LAYER 480
 #define SIZE_SECOND_LAYER 200
 #define SIZE_THIRD_LAYER 180
-#define LEARNING_RATE 0.0001
+#define LEARNING_RATE 0.001
 
 double sigmoid(double x);
 class NNG
@@ -62,7 +63,7 @@ public:
     NNG();
     NNG(size_t sizeTrainingData);
     ~NNG();
-    void setInputData(float *mat);
+    void setInputData(const float *mat);
     void setLabels(float *labels);
     void forwardProp();
     void backpropagateOutputLayer();
@@ -78,6 +79,9 @@ public:
     void initilizeYMatrix(float *pLabels);
     float sumCrossEntropyLoss();
     float calcAccuracy(float *testData, float *testLabels, size_t sizeTestData);
+    float trainStep();
+    void copyParametersFrom(const NNG &source);
+    std::pair<float, float> evaluate(const float *testData, const float *testLabels);
     void run(size_t times);
 };
 #endif

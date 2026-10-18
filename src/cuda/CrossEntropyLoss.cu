@@ -53,7 +53,7 @@ __global__ void CudaKernels::crossEntropyLossKernel(const float *y_hat, const fl
         int label = static_cast<int>(labels[idx]);
         if (label >= 0 && label < 10)
         {
-            float val = y_hat[label + idx * 10];
+            float val = y_hat[label * numSamples + idx];
             if (val <= 0.0)
             {
                 val = 1e-8f;

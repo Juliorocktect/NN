@@ -44,10 +44,9 @@ namespace ImagePreProcessor
     float *loadImageTestData(size_t imageCount);
 
     /**
-     * @brief loads the Labels in a vector 1x10.000
-     *
-     * @return float*
+     * @brief Loads the test labels as a host vector.
+     * @return Test labels corresponding to the test image file.
      */
-    float *readTestLabels();
+    std::vector<float> readTestLabels();
 }
 #endif

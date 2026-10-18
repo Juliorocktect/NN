@@ -1,4 +1,7 @@
 #include "VNN.h"
+#include <algorithm>
+#include <stdexcept>
+#include <vector>
 
 NNG::NNG()
 {
@@ -76,7 +79,7 @@ NNG::NNG(size_t sizeTrainingData)
 NNG::~NNG()
 {
 }
-void NNG::setInputData(float *mat)
+void NNG::setInputData(const float *mat)
 {
     inputData.uploadMatrixToGPU(mat);
 }
@@ -105,26 +108,87 @@ float NNG::sumCrossEntropyLoss()
 }
 void NNG::run(size_t times)
 {
-    for (unsigned int i = 0; i < times; i++)
+    for (size_t i = 0; i < times; i++)
     {
-        this->forwardProp();
-        this->backpropagateOutputLayer();
-        this->backpropagateThirdLayer();
-        this->backpropagateSecondLayer();
-        this->backpropagateFirstLayer();
-        this->updateWeightsAndBiases();
+        trainStep();
     }
+}
+float NNG::trainStep()
+{
+    forwardProp();
+    const float loss = sumCrossEntropyLoss();
+    backpropagateOutputLayer();
+    backpropagateThirdLayer();
+    backpropagateSecondLayer();
+    backpropagateFirstLayer();
+    updateWeightsAndBiases();
+    return loss;
+}
+
+void NNG::copyParametersFrom(const NNG &source)
+{
+    w1 = source.w1;
+    w2 = source.w2;
+    w3 = source.w3;
+    w4 = source.w4;
+    b1 = source.b1;
+    b2 = source.b2;
+    b3 = source.b3;
+    b4 = source.b4;
+}
+
+std::pair<float, float> NNG::evaluate(const float *testData, const float *testLabels)
+{
+    if (SIZE_TRAINING_DATA == 0 || testData == nullptr || testLabels == nullptr)
+        throw std::invalid_argument("Evaluation requires test data and labels");
+
+    setInputData(testData);
+    forwardProp();
+
+    const size_t sampleCount = SIZE_TRAINING_DATA;
+    std::vector<float> predictions(10 * sampleCount);
+    cudaError_t error = cudaMemcpy(
+        predictions.data(),
+        y_hat.getMatrix(),
+        predictions.size() * sizeof(float),
+        cudaMemcpyDeviceToHost);
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
+
+    constexpr float minimumProbability = 1e-8f;
+    size_t correct = 0;
+    float totalLoss = 0.0f;
+    for (size_t sample = 0; sample < sampleCount; ++sample)
+    {
+        if (!std::isfinite(testLabels[sample]))
+            throw std::invalid_argument("Test labels must be finite integers from 0 to 9");
+        const int label = static_cast<int>(testLabels[sample]);
+        if (label < 0 || label >= 10 || testLabels[sample] != label)
+            throw std::invalid_argument("Test labels must be integers from 0 to 9");
+
+        int predictedLabel = 0;
+        float maximumProbability = predictions[sample];
+        for (int category = 1; category < 10; ++category)
+        {
+            const float probability = predictions[category * sampleCount + sample];
+            if (probability > maximumProbability)
+            {
+                maximumProbability = probability;
+                predictedLabel = category;
+            }
+        }
+
+        correct += predictedLabel == label;
+        const float probability = predictions[label * sampleCount + sample];
+        totalLoss -= std::log(std::max(probability, minimumProbability));
+    }
+
+    return {totalLoss / static_cast<float>(sampleCount),
+            static_cast<float>(correct) / static_cast<float>(sampleCount)};
 }
 float NNG::calcAccuracy(float *testData, float *testLabels, size_t sizeTestData)
 {
-    NNG testNetwork(sizeTestData);
-    testNetwork.initilizeYMatrix(testLabels);
-    testNetwork.setInputData(testData);
-    testNetwork.run(1);
-    this->printGreen("Feed Through finished with test data");
-    // execute Argmax
-    GVector argmaxResult(y.getCols());
-    CudaLaunchers::argmax(y.getMatrix(), y.getRows(), y.getCols(), argmaxResult.getVector());
-    // calculate loss
-    return 0.0f;
+    NNG evaluator(sizeTestData);
+    evaluator.copyParametersFrom(*this);
+    return evaluator.evaluate(testData, testLabels).second;
 }

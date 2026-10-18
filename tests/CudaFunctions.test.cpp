@@ -28,8 +28,8 @@ TEST(CudaCrossEntropyLossTest, ComputesMeanLossForMultipleSamples)
 {
     const int numSamples = 2;
     std::vector<float> y_hat(10 * numSamples, 0.0f);
-    y_hat[0 * 10 + 0] = 0.9f; // sample 0, class 0
-    y_hat[1 * 10 + 2] = 0.8f; // sample 1, class 2
+    y_hat[0 * numSamples + 0] = 0.9f; // sample 0, class 0
+    y_hat[2 * numSamples + 1] = 0.8f; // sample 1, class 2
     std::vector<float> labels = {0.0f, 2.0f};
     GVector y_hat_d(y_hat.size());
     GVector labels_d(labels.size());
@@ -47,8 +47,8 @@ TEST(CudaCrossEntropyLossTest, ReturnsZeroForInvalidLabel)
 {
     const int numSamples = 2;
     std::vector<float> y_hat(10 * numSamples, 0.0f);
-    y_hat[0 * 10 + 0] = 0.7f; // sample 0, class 0
-    y_hat[1 * 10 + 1] = 0.6f; // sample 1, class 1
+    y_hat[0 * numSamples + 0] = 0.7f; // sample 0, class 0
+    y_hat[1 * numSamples + 1] = 0.6f; // sample 1, class 1
     std::vector<float> labels = {0.0f, 10.0f};
     GVector y_hat_d(y_hat.size());
     GVector labels_d(labels.size());
@@ -69,7 +69,7 @@ TEST(CudaLaunchersHotEncodeYMatrixTest, EncodesRepeatedLabelsCorrectly)
     std::vector<float> expected(numSamples * 10, 0.0f);
     for (size_t i = 0; i < numSamples; ++i)
     {
-        expected[i * 10 + 3] = 1.0f;
+        expected[3 * numSamples + i] = 1.0f;
     }
 
     float *labels_d = nullptr;
@@ -100,7 +100,7 @@ TEST(CudaLaunchersHotEncodeYMatrixTest, EncodesEveryClassCorrectly)
     std::vector<float> expected(numSamples * 10, 0.0f);
     for (size_t i = 0; i < numSamples; ++i)
     {
-        expected[i * 10 + static_cast<int>(labels_h[i])] = 1.0f;
+        expected[static_cast<int>(labels_h[i]) * numSamples + i] = 1.0f;
     }
 
     float *labels_d = nullptr;

@@ -84,10 +84,51 @@ target_link_libraries(main_exec PRIVATE MATHS)
 target_link_libraries(vnn_lib PRIVATE MATHS)
 target_link_libraries(main_exec PRIVATE vnn_lib)
 find_package(SDL3 REQUIRED)
+
+include(FetchContent)
+FetchContent_Declare(
+    imgui_source
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG v1.91.9b
+    GIT_SHALLOW TRUE
+)
+FetchContent_Declare(
+    implot_source
+    GIT_REPOSITORY https://github.com/epezent/implot.git
+    GIT_TAG v0.16
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(imgui_source implot_source)
+
+add_library(imgui STATIC
+    ${imgui_source_SOURCE_DIR}/imgui.cpp
+    ${imgui_source_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_source_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_source_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_source_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
+    ${imgui_source_SOURCE_DIR}/backends/imgui_impl_sdlrenderer3.cpp
+)
+target_include_directories(imgui PUBLIC
+    ${imgui_source_SOURCE_DIR}
+    ${imgui_source_SOURCE_DIR}/backends
+)
+target_link_libraries(imgui PUBLIC SDL3::SDL3)
+
+add_library(implot STATIC
+    ${implot_source_SOURCE_DIR}/implot.cpp
+    ${implot_source_SOURCE_DIR}/implot_items.cpp
+)
+target_include_directories(implot PUBLIC ${implot_source_SOURCE_DIR})
+target_link_libraries(implot PUBLIC imgui)
+
+add_library(training_gui src/gui/TrainingMetricsGui.cpp)
+target_include_directories(training_gui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(training_gui PUBLIC imgui implot SDL3::SDL3)
+
 include(GoogleTest)
 gtest_discover_tests(nn_tests)
 
-target_link_libraries(main_exec PRIVATE SDL3::SDL3)
+target_link_libraries(main_exec PRIVATE SDL3::SDL3 training_gui)
 target_link_libraries(vnn_lib PRIVATE SDL3::SDL3)
 target_link_libraries(nn_tests PRIVATE
     GTest::gtest
