@@ -20,7 +20,7 @@ private:
     void printGreen(const char *text);
     void printRed(const char *text);
     double costF();
-    size_t SIZE_TRAINING_DATA;
+    size_t SIZE_TRAINING_DATA = 0;
 
     GMatrix inputData; // 784xSIZE_TRAINING_DATA
     // Weights

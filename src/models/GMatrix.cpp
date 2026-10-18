@@ -1,16 +1,58 @@
 #include "GMatrix.hpp"
+#include <stdexcept>
 
 GMatrix::GMatrix() : matrix(nullptr), rows(0), cols(0) {}
 
 GMatrix::GMatrix(int pRows, int pCols) : matrix(nullptr), rows(pRows), cols(pCols)
 {
-    cudaMalloc(&matrix, rows * cols * sizeof(float));
-    cudaMemset(matrix, 0, rows * cols * sizeof(float));
-    // malloc mem on gpu
+    const size_t total = static_cast<size_t>(rows) * cols;
+    if (total > 0)
+    {
+        cudaError_t error = cudaMalloc(&matrix, total * sizeof(float));
+        if (error != cudaSuccess)
+            throw std::runtime_error(cudaGetErrorString(error));
+
+        error = cudaMemset(matrix, 0, total * sizeof(float));
+        if (error != cudaSuccess)
+        {
+            cudaFree(matrix);
+            matrix = nullptr;
+            throw std::runtime_error(cudaGetErrorString(error));
+        }
+    }
 }
+
+GMatrix::GMatrix(const GMatrix &other)
+    : matrix(nullptr), rows(other.rows), cols(other.cols)
+{
+    const size_t total = rows * cols;
+    if (total > 0)
+    {
+        cudaError_t error = cudaMalloc(&matrix, total * sizeof(float));
+        if (error != cudaSuccess)
+            throw std::runtime_error(cudaGetErrorString(error));
+
+        error = cudaMemcpy(matrix, other.matrix, total * sizeof(float), cudaMemcpyDeviceToDevice);
+        if (error != cudaSuccess)
+        {
+            cudaFree(matrix);
+            matrix = nullptr;
+            throw std::runtime_error(cudaGetErrorString(error));
+        }
+    }
+}
+
+GMatrix::GMatrix(GMatrix &&other) noexcept
+    : matrix(other.matrix), rows(other.rows), cols(other.cols)
+{
+    other.matrix = nullptr;
+    other.rows = 0;
+    other.cols = 0;
+}
+
 GMatrix::~GMatrix()
 {
-    cudaFree(&matrix);
+    cudaFree(matrix);
 }
 size_t GMatrix::getRows()
 {
@@ -108,8 +150,16 @@ GMatrix &GMatrix::operator=(const GMatrix &other)
     float *newMatrix = nullptr;
     if (total > 0)
     {
-        cudaMalloc(&newMatrix, total * sizeof(float));
-        cudaMemcpy(newMatrix, other.matrix, total * sizeof(float), cudaMemcpyDeviceToDevice);
+        cudaError_t error = cudaMalloc(&newMatrix, total * sizeof(float));
+        if (error != cudaSuccess)
+            throw std::runtime_error(cudaGetErrorString(error));
+
+        error = cudaMemcpy(newMatrix, other.matrix, total * sizeof(float), cudaMemcpyDeviceToDevice);
+        if (error != cudaSuccess)
+        {
+            cudaFree(newMatrix);
+            throw std::runtime_error(cudaGetErrorString(error));
+        }
     }
 
     cudaFree(matrix);
@@ -118,6 +168,21 @@ GMatrix &GMatrix::operator=(const GMatrix &other)
     rows = other.rows;
     cols = other.cols;
 
+    return *this;
+}
+
+GMatrix &GMatrix::operator=(GMatrix &&other) noexcept
+{
+    if (this == &other)
+        return *this;
+
+    cudaFree(matrix);
+    matrix = other.matrix;
+    rows = other.rows;
+    cols = other.cols;
+    other.matrix = nullptr;
+    other.rows = 0;
+    other.cols = 0;
     return *this;
 }
 GMatrix GMatrix::operator*(GMatrix &other)

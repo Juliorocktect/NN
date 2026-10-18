@@ -14,7 +14,7 @@ void CudaLaunchers::vectorValueMultiplication(float *vec, float *vecResult, floa
 {
     int threadsPerBlock = 128;
     int blocksPerGrid = (size + threadsPerBlock - 1) / threadsPerBlock;
-    CudaKernels::vectorValueMultiplication<<<threadsPerBlock, blocksPerGrid>>>(vec, vecResult, size, value);
+    CudaKernels::vectorValueMultiplication<<<blocksPerGrid, threadsPerBlock>>>(vec, vecResult, size, value);
     cudaError_t error = cudaGetLastError();
     if (error != cudaSuccess)
         throw std::runtime_error(cudaGetErrorString(error));

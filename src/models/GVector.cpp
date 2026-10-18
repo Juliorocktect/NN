@@ -86,6 +86,12 @@ void GVector::upload(float *hostVector)
     }
 
     cudaMemcpy(vector, hostVector, size * sizeof(float), cudaMemcpyHostToDevice);
+    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess)
+    {
+        throw std::runtime_error(cudaGetErrorString(error));
+    }
 }
 
 GVector &GVector::operator=(const GVector &other)

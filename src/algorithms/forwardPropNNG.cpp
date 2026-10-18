@@ -8,17 +8,17 @@ void NNG::forwardProp()
     A1 = Z1.sigmoid();
 
     // Layer 2 Calc
-    Z2 = (w2 * Z1);
+    Z2 = (w2 * A1);
     Z2 = (Z2 + b2);
     A2 = Z2.sigmoid();
 
     // Layer 3 Calc
-    Z3 = (w3 * Z2);
+    Z3 = (w3 * A2);
     Z3 = (Z3 + b3);
     A3 = Z3.sigmoid();
 
     // Output Layer Calc
-    y_hat = (w4 * Z3);
+    y_hat = (w4 * A3);
     y_hat = (y_hat + b4);
     y_hat = y_hat.softmax();
 }

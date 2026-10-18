@@ -110,6 +110,7 @@ void NNG::run(size_t times)
         this->forwardProp();
         this->backpropagateOutputLayer();
         this->backpropagateThirdLayer();
+        this->backpropagateSecondLayer();
         this->backpropagateFirstLayer();
         this->updateWeightsAndBiases();
     }

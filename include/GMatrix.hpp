@@ -34,6 +34,9 @@ public:
      */
     GMatrix();
 
+    GMatrix(const GMatrix &other);
+    GMatrix(GMatrix &&other) noexcept;
+
     /**
      * @brief Releases the matrix storage on the GPU.
      */
@@ -81,6 +84,7 @@ public:
      * @return Reference to this matrix.
      */
     GMatrix &operator=(const GMatrix &other); // = Operator
+    GMatrix &operator=(GMatrix &&other) noexcept;
 
     /**
      * @brief Adds two matrices element by element.
