@@ -4,6 +4,14 @@
 #include "Maths.h"
 namespace CudaKernels
 {
+    /** @brief Computes the sigmoid function.
+     * Formula: sigmoid(x) = 1 / (1 + exp(-x))
+     *
+     * @param x
+     * @return __device__
+     */
+    __device__ float sigmoid(float x);
+
     /**
      * @brief adds the value of mat2 to mat1 on the same idx
      *

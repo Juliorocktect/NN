@@ -4,7 +4,7 @@
 #include <iostream>
 #include <cmath>
 #include <inttypes.h>
-#include <utility>
+#include <array>
 #include <Maths.h>
 #include "GMatrix.hpp"
 #include "GVector.hpp"
@@ -15,6 +15,19 @@
 #define LEARNING_RATE 0.001
 
 double sigmoid(double x);
+
+struct EvaluationMetrics
+{
+    float loss = 0.0f;
+    float accuracy = 0.0f;
+    float meanConfidence = 0.0f;
+    std::array<size_t, 10> actualCounts{};
+    std::array<size_t, 10> predictedCounts{};
+    std::array<size_t, 100> confusionCounts{};
+    std::array<double, 100> normalizedConfusion{};
+    std::array<float, 10> classRecall{};
+};
+
 class NNG
 {
 private:
@@ -81,7 +94,7 @@ public:
     float calcAccuracy(float *testData, float *testLabels, size_t sizeTestData);
     float trainStep();
     void copyParametersFrom(const NNG &source);
-    std::pair<float, float> evaluate(const float *testData, const float *testLabels);
+    EvaluationMetrics evaluate(const float *testData, const float *testLabels);
     void run(size_t times);
 };
 #endif

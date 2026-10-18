@@ -10,6 +10,9 @@
 
 TrainingMetricsGui::TrainingMetricsGui()
 {
+    for (size_t category = 0; category < classPositions.size(); ++category)
+        classPositions[category] = static_cast<double>(category);
+
     if (!SDL_Init(SDL_INIT_VIDEO))
         throw std::runtime_error(SDL_GetError());
     sdlInitialized = true;
@@ -109,6 +112,26 @@ void TrainingMetricsGui::addMetrics(
     testAccuracies.push_back(testAccuracy);
 }
 
+void TrainingMetricsGui::setDiagnostics(
+    const std::array<size_t, 10> &actualCounts,
+    const std::array<size_t, 10> &predictedCounts,
+    const std::array<size_t, 100> &confusionCounts,
+    const std::array<double, 100> &normalizedConfusion,
+    const std::array<float, 10> &classRecall,
+    float meanConfidence)
+{
+    this->actualCounts = actualCounts;
+    this->confusionCounts = confusionCounts;
+    this->normalizedConfusion = normalizedConfusion;
+    this->meanConfidence = meanConfidence;
+    hasDiagnostics = true;
+    for (size_t category = 0; category < classPositions.size(); ++category)
+    {
+        this->predictedCounts[category] = static_cast<double>(predictedCounts[category]);
+        this->classRecall[category] = static_cast<double>(classRecall[category]);
+    }
+}
+
 void TrainingMetricsGui::render()
 {
     ImGui_ImplSDLRenderer3_NewFrame();
@@ -118,6 +141,8 @@ void TrainingMetricsGui::render()
     ImGui::SetNextWindowSize(ImVec2(1000.0f, 680.0f), ImGuiCond_FirstUseEver);
     ImGui::Begin("Training metrics");
     ImGui::Text("Test metrics are measured every 100 training steps.");
+    if (hasDiagnostics)
+        ImGui::Text("Mean confidence: %.4f", meanConfidence);
 
     if (!steps.empty())
     {
@@ -128,6 +153,62 @@ void TrainingMetricsGui::render()
             ImPlot::PlotLine("Training loss", steps.data(), trainingLosses.data(), count);
             ImPlot::PlotLine("Test loss", steps.data(), testLosses.data(), count);
             ImPlot::EndPlot();
+        }
+
+        if (hasDiagnostics && ImPlot::BeginPlot("Predicted class distribution"))
+        {
+            ImPlot::SetupAxes("Predicted class", "Number of test samples");
+            ImPlot::SetupAxisTicks(ImAxis_X1, classPositions.data(), static_cast<int>(classPositions.size()));
+            ImPlot::PlotBars("Predicted", classPositions.data(), predictedCounts.data(),
+                             static_cast<int>(predictedCounts.size()), 0.7);
+            ImPlot::EndPlot();
+        }
+
+        if (hasDiagnostics && ImPlot::BeginPlot("Confusion matrix (row-normalized)"))
+        {
+            constexpr const char *classLabels[] = {
+                "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+            ImPlot::SetupAxes("Predicted class", "Actual class");
+            ImPlot::SetupAxisTicks(ImAxis_X1, 0.5, 9.5, 10, classLabels, false);
+            ImPlot::SetupAxisTicks(ImAxis_Y1, 0.5, 9.5, 10, classLabels, false);
+            ImPlot::PlotHeatmap("Recall", normalizedConfusion.data(), 10, 10, 0.0, 1.0,
+                                "%.2f", ImPlotPoint(0, 0), ImPlotPoint(10, 10));
+            ImPlot::EndPlot();
+        }
+
+        if (hasDiagnostics && ImPlot::BeginPlot("Recall by actual class"))
+        {
+            ImPlot::SetupAxes("Actual class", "Recall");
+            ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, 1.0, ImPlotCond_Always);
+            ImPlot::SetupAxisTicks(ImAxis_X1, classPositions.data(), static_cast<int>(classPositions.size()));
+            ImPlot::PlotBars("Recall", classPositions.data(), classRecall.data(),
+                             static_cast<int>(classRecall.size()), 0.7);
+            ImPlot::EndPlot();
+        }
+
+        if (hasDiagnostics && ImGui::CollapsingHeader("Class counts"))
+        {
+            if (ImGui::BeginTable("ClassCounts", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
+            {
+                ImGui::TableSetupColumn("Class");
+                ImGui::TableSetupColumn("Actual");
+                ImGui::TableSetupColumn("Predicted");
+                ImGui::TableSetupColumn("Correct");
+                ImGui::TableHeadersRow();
+                for (size_t category = 0; category < actualCounts.size(); ++category)
+                {
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::Text("%zu", category);
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::Text("%zu", actualCounts[category]);
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::Text("%.0f", predictedCounts[category]);
+                    ImGui::TableSetColumnIndex(3);
+                    ImGui::Text("%zu", confusionCounts[category * 10 + category]);
+                }
+                ImGui::EndTable();
+            }
         }
 
         if (ImPlot::BeginPlot("Test accuracy"))

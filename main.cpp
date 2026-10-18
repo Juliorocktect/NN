@@ -42,13 +42,24 @@ int main()
             if (step % evaluationInterval == 0 || step == 1 || step == trainingSteps)
             {
                 evaluator.copyParametersFrom(network);
-                const auto [testLoss, testAccuracy] = evaluator.evaluate(testImages.get(), testLabels.data());
-                gui.addMetrics(step, trainingLoss, testLoss, testAccuracy);
+                const EvaluationMetrics metrics = evaluator.evaluate(testImages.get(), testLabels.data());
+                gui.addMetrics(step, trainingLoss, metrics.loss, metrics.accuracy);
+                gui.setDiagnostics(
+                    metrics.actualCounts,
+                    metrics.predictedCounts,
+                    metrics.confusionCounts,
+                    metrics.normalizedConfusion,
+                    metrics.classRecall,
+                    metrics.meanConfidence);
                 gui.render();
                 std::cout << "Schritt " << step
                           << " | Trainings-Loss: " << trainingLoss
-                          << " | Test-Loss: " << testLoss
-                          << " | Testgenauigkeit: " << testAccuracy << '\n';
+                          << " | Test-Loss: " << metrics.loss
+                          << " | Testgenauigkeit: " << metrics.accuracy
+                          << " | Vorhersagen je Klasse:";
+                for (size_t category = 0; category < metrics.predictedCounts.size(); ++category)
+                    std::cout << ' ' << category << '=' << metrics.predictedCounts[category];
+                std::cout << '\n';
             }
         }
 

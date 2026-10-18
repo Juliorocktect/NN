@@ -137,7 +137,7 @@ void NNG::copyParametersFrom(const NNG &source)
     b4 = source.b4;
 }
 
-std::pair<float, float> NNG::evaluate(const float *testData, const float *testLabels)
+EvaluationMetrics NNG::evaluate(const float *testData, const float *testLabels)
 {
     if (SIZE_TRAINING_DATA == 0 || testData == nullptr || testLabels == nullptr)
         throw std::invalid_argument("Evaluation requires test data and labels");
@@ -156,8 +156,10 @@ std::pair<float, float> NNG::evaluate(const float *testData, const float *testLa
         throw std::runtime_error(cudaGetErrorString(error));
 
     constexpr float minimumProbability = 1e-8f;
-    size_t correct = 0;
+    EvaluationMetrics metrics;
+    size_t correctCount = 0;
     float totalLoss = 0.0f;
+    float totalConfidence = 0.0f;
     for (size_t sample = 0; sample < sampleCount; ++sample)
     {
         if (!std::isfinite(testLabels[sample]))
@@ -178,17 +180,41 @@ std::pair<float, float> NNG::evaluate(const float *testData, const float *testLa
             }
         }
 
-        correct += predictedLabel == label;
+        ++metrics.actualCounts[label];
+        ++metrics.predictedCounts[predictedLabel];
+        ++metrics.confusionCounts[label * 10 + predictedLabel];
+        if (predictedLabel == label)
+        {
+            ++correctCount;
+            ++metrics.classRecall[label];
+        }
+        totalConfidence += maximumProbability;
         const float probability = predictions[label * sampleCount + sample];
         totalLoss -= std::log(std::max(probability, minimumProbability));
     }
 
-    return {totalLoss / static_cast<float>(sampleCount),
-            static_cast<float>(correct) / static_cast<float>(sampleCount)};
+    metrics.loss = totalLoss / static_cast<float>(sampleCount);
+    metrics.accuracy = static_cast<float>(correctCount) / static_cast<float>(sampleCount);
+    metrics.meanConfidence = totalConfidence / static_cast<float>(sampleCount);
+
+    for (size_t actual = 0; actual < metrics.actualCounts.size(); ++actual)
+    {
+        if (metrics.actualCounts[actual] == 0)
+            continue;
+        for (size_t predicted = 0; predicted < metrics.predictedCounts.size(); ++predicted)
+        {
+            const size_t index = actual * 10 + predicted;
+            metrics.normalizedConfusion[index] =
+                static_cast<double>(metrics.confusionCounts[index]) /
+                static_cast<double>(metrics.actualCounts[actual]);
+        }
+        metrics.classRecall[actual] /= static_cast<float>(metrics.actualCounts[actual]);
+    }
+    return metrics;
 }
 float NNG::calcAccuracy(float *testData, float *testLabels, size_t sizeTestData)
 {
     NNG evaluator(sizeTestData);
     evaluator.copyParametersFrom(*this);
-    return evaluator.evaluate(testData, testLabels).second;
+    return evaluator.evaluate(testData, testLabels).accuracy;
 }

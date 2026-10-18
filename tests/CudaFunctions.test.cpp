@@ -246,3 +246,30 @@ TEST(CudaLaunchersArgmaxTest, ReturnsZeroForFirstMaxWhenMultipleMaxima)
     cudaFree(mat_d);
     cudaFree(result_d);
 }
+
+TEST(CudaLaunchersArgmaxTest, ChecksForMaxInFirstColumn)
+{
+    const int rows = 3;
+    const int cols = 1;
+    std::vector<float> mat_h = {8.0f, 5.0f, 7.0f};
+    std::vector<float> expected = {0.0f};
+
+    float *mat_d = nullptr;
+    float initialResult = 123.0f;
+    float *result_d = nullptr;
+    cudaMalloc(&mat_d, rows * cols * sizeof(float));
+    cudaMalloc(&result_d, cols * sizeof(float));
+    cudaMemcpy(result_d, &initialResult, sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(mat_d, mat_h.data(), rows * cols * sizeof(float), cudaMemcpyHostToDevice);
+
+    CudaLaunchers::argmax(mat_d, rows, cols, result_d);
+
+    std::vector<float> result_h(cols);
+    cudaMemcpy(result_h.data(), result_d, cols * sizeof(float), cudaMemcpyDeviceToHost);
+
+    EXPECT_EQ(cudaGetLastError(), cudaSuccess);
+    EXPECT_EQ(result_h[0], expected[0]);
+
+    cudaFree(mat_d);
+    cudaFree(result_d);
+}
