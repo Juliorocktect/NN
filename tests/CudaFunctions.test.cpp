@@ -247,7 +247,7 @@ TEST(CudaLaunchersArgmaxTest, ReturnsZeroForFirstMaxWhenMultipleMaxima)
     cudaFree(result_d);
 }
 
-TEST(CudaLaunchersArgmaxTest, ChecksForMaxInFirstColumn)
+TEST(CudaLaunchersArgmaxTest, ReturnsZeroWhenMaximumIsInFirstRow)
 {
     const int rows = 3;
     const int cols = 1;

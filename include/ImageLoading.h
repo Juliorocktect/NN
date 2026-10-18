@@ -5,7 +5,6 @@
 #include <inttypes.h>
 #include <iostream>
 #include <vector>
-#include <SDL3/SDL.h>
 #include <limits>
 #define IMAGE_PATH "/home/julio/Dokumente/NN/resources/train-images.idx3-ubyte"
 #define LABEL_PATH "/home/julio/Dokumente/NN/resources/train-labels.idx1-ubyte"

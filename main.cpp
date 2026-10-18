@@ -1,5 +1,6 @@
 #include <VNN.h>
 #include <ImageLoading.h>
+#include "MetricsCsvWriter.hpp"
 #include "TrainingMetricsGui.hpp"
 #include <memory>
 #include <vector>
@@ -34,15 +35,19 @@ int main()
 
         NNG evaluator(testCount);
         TrainingMetricsGui gui;
+        MetricsCsvWriter metricsCsv("training_metrics.csv");
         gui.render();
 
-        for (size_t step = 1; step <= trainingSteps && gui.processEvents(); ++step)
+        size_t step = 0;
+        gui.setTrainingStepCallback([&]()
         {
+            ++step;
             const float trainingLoss = network.trainStep();
             if (step % evaluationInterval == 0 || step == 1 || step == trainingSteps)
             {
                 evaluator.copyParametersFrom(network);
                 const EvaluationMetrics metrics = evaluator.evaluate(testImages.get(), testLabels.data());
+                metricsCsv.writeMetrics(step, trainingLoss, metrics);
                 gui.addMetrics(step, trainingLoss, metrics.loss, metrics.accuracy);
                 gui.setDiagnostics(
                     metrics.actualCounts,
@@ -61,7 +66,9 @@ int main()
                     std::cout << ' ' << category << '=' << metrics.predictedCounts[category];
                 std::cout << '\n';
             }
-        }
+            return step < trainingSteps;
+        });
+        gui.run();
 
         return 0;
     }

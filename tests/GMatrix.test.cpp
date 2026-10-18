@@ -207,6 +207,26 @@ TEST(GMatrixTest, SigmoidDerivativeCalculatesElementwiseDerivative)
     }
 }
 
+TEST(GMatrixTest, CalculatesMeanOfEachRow)
+{
+    GMatrix matrix(3, 4);
+    copyToDevice(matrix, {
+        1.0f, 2.0f, 3.0f, 4.0f,
+        10.0f, 20.0f, 30.0f, 40.0f,
+        -4.0f, -2.0f, 2.0f, 4.0f});
+
+    GVector means = matrix.calcMeanRowise();
+    std::vector<float> actual(means.getSize());
+    ASSERT_EQ(cudaMemcpy(actual.data(), means.getVector(),
+                         actual.size() * sizeof(float), cudaMemcpyDeviceToHost),
+              cudaSuccess);
+
+    ASSERT_EQ(actual.size(), 3);
+    EXPECT_NEAR(actual[0], 2.5f, 1e-6f);
+    EXPECT_NEAR(actual[1], 25.0f, 1e-6f);
+    EXPECT_NEAR(actual[2], 0.0f, 1e-6f);
+}
+
 TEST(GMatrixTest, MultiplyWithFloatMultipliesEveryElement)
 {
     GMatrix matrix(2, 2);

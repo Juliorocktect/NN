@@ -1,103 +1,426 @@
 #include "TrainingMetricsGui.hpp"
 
-#include <imgui.h>
-#include <imgui_impl_sdl3.h>
-#include <imgui_impl_sdlrenderer3.h>
-#include <implot.h>
-
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
 #include <stdexcept>
-#include <string>
+
+namespace
+{
+constexpr double margin = 48.0;
+constexpr double titleHeight = 28.0;
+
+void setColor(cairo_t *context, double red, double green, double blue, double alpha = 1.0)
+{
+    cairo_set_source_rgba(context, red, green, blue, alpha);
+}
+
+void drawText(cairo_t *context, double x, double y, const char *text, double size = 13.0)
+{
+    cairo_select_font_face(context, "sans-serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_set_font_size(context, size);
+    cairo_move_to(context, x, y);
+    cairo_show_text(context, text);
+}
+
+void drawChartFrame(cairo_t *context, double x, double y, double width, double height, const char *title)
+{
+    setColor(context, 0.14, 0.16, 0.20);
+    cairo_rectangle(context, x, y, width, height);
+    cairo_fill(context);
+
+    setColor(context, 0.88, 0.90, 0.94);
+    drawText(context, x + 14.0, y + 20.0, title, 15.0);
+
+    setColor(context, 0.32, 0.35, 0.40);
+    cairo_set_line_width(context, 1.0);
+    cairo_rectangle(context, x + margin, y + titleHeight, width - margin - 14.0, height - titleHeight - 32.0);
+    cairo_stroke(context);
+}
+
+void drawLineSeries(
+    cairo_t *context,
+    double x,
+    double y,
+    double width,
+    double height,
+    const std::vector<double> &values,
+    double minimum,
+    double maximum,
+    double red,
+    double green,
+    double blue)
+{
+    if (values.empty())
+        return;
+
+    const double plotX = x + margin;
+    const double plotY = y + titleHeight;
+    const double plotWidth = std::max(1.0, width - margin - 14.0);
+    const double plotHeight = std::max(1.0, height - titleHeight - 32.0);
+    const double range = std::max(1e-12, maximum - minimum);
+
+    setColor(context, red, green, blue);
+    cairo_set_line_width(context, 2.0);
+    for (size_t index = 0; index < values.size(); ++index)
+    {
+        const double px = plotX + (values.size() == 1
+                                       ? 0.0
+                                       : plotWidth * static_cast<double>(index) / static_cast<double>(values.size() - 1));
+        const double normalized = std::clamp((values[index] - minimum) / range, 0.0, 1.0);
+        const double py = plotY + plotHeight * (1.0 - normalized);
+        if (index == 0)
+            cairo_move_to(context, px, py);
+        else
+            cairo_line_to(context, px, py);
+    }
+    cairo_stroke(context);
+}
+
+void drawBarChart(
+    cairo_t *context,
+    double x,
+    double y,
+    double width,
+    double height,
+    const char *title,
+    const std::array<double, 10> &values,
+    double maximum,
+    bool percentage)
+{
+    drawChartFrame(context, x, y, width, height, title);
+    const double plotX = x + margin;
+    const double plotY = y + titleHeight;
+    const double plotWidth = std::max(1.0, width - margin - 14.0);
+    const double plotHeight = std::max(1.0, height - titleHeight - 32.0);
+    const double barWidth = plotWidth / 10.0;
+    const double valueRange = std::max(maximum, 1e-12);
+
+    for (size_t category = 0; category < values.size(); ++category)
+    {
+        const double barHeight = plotHeight * std::clamp(values[category] / valueRange, 0.0, 1.0);
+        setColor(context, 0.25, 0.62, 0.86);
+        cairo_rectangle(context,
+                        plotX + category * barWidth + barWidth * 0.15,
+                        plotY + plotHeight - barHeight,
+                        barWidth * 0.7,
+                        barHeight);
+        cairo_fill(context);
+
+        char label[32];
+        if (percentage)
+            std::snprintf(label, sizeof(label), "%.0f%%", values[category] * 100.0);
+        else
+            std::snprintf(label, sizeof(label), "%.0f", values[category]);
+        setColor(context, 0.82, 0.84, 0.88);
+        drawText(context, plotX + category * barWidth + barWidth * 0.25, plotY + plotHeight + 17.0, label, 10.0);
+        std::snprintf(label, sizeof(label), "%zu", category);
+        drawText(context, plotX + category * barWidth + barWidth * 0.4, y + height - 4.0, label, 10.0);
+    }
+}
+
+void drawLossChart(
+    cairo_t *context,
+    double x,
+    double y,
+    double width,
+    double height,
+    const std::vector<double> &trainingLosses,
+    const std::vector<double> &testLosses)
+{
+    drawChartFrame(context, x, y, width, height, "Training and test loss");
+    if (trainingLosses.empty())
+        return;
+
+    double minimum = std::min(*std::min_element(trainingLosses.begin(), trainingLosses.end()),
+                              *std::min_element(testLosses.begin(), testLosses.end()));
+    double maximum = std::max(*std::max_element(trainingLosses.begin(), trainingLosses.end()),
+                              *std::max_element(testLosses.begin(), testLosses.end()));
+    const double padding = std::max((maximum - minimum) * 0.1, 1e-6);
+    minimum -= padding;
+    maximum += padding;
+
+    drawLineSeries(context, x, y, width, height, trainingLosses, minimum, maximum, 0.25, 0.72, 0.42);
+    drawLineSeries(context, x, y, width, height, testLosses, minimum, maximum, 0.95, 0.55, 0.25);
+
+    setColor(context, 0.25, 0.72, 0.42);
+    drawText(context, x + margin, y + height - 5.0, "Training");
+    setColor(context, 0.95, 0.55, 0.25);
+    drawText(context, x + margin + 90.0, y + height - 5.0, "Test");
+}
+
+void drawConfusionMatrix(
+    cairo_t *context,
+    double x,
+    double y,
+    double width,
+    double height,
+    const std::array<double, 100> &values)
+{
+    drawChartFrame(context, x, y, width, height, "Row-normalized confusion matrix");
+    const double cell = std::max(1.0, std::min((width - margin - 24.0) / 10.0, (height - titleHeight - 40.0) / 10.0));
+    const double startX = x + margin;
+    const double startY = y + titleHeight + 4.0;
+
+    for (size_t actual = 0; actual < 10; ++actual)
+    {
+        for (size_t predicted = 0; predicted < 10; ++predicted)
+        {
+            const double value = std::clamp(values[actual * 10 + predicted], 0.0, 1.0);
+            setColor(context, 0.10 + 0.25 * value, 0.20 + 0.60 * value, 0.32 + 0.62 * value);
+            cairo_rectangle(context, startX + predicted * cell, startY + actual * cell, cell - 1.0, cell - 1.0);
+            cairo_fill(context);
+            if (cell >= 28.0)
+            {
+                char label[16];
+                std::snprintf(label, sizeof(label), "%.0f%%", value * 100.0);
+                setColor(context, 0.96, 0.97, 0.99);
+                drawText(context, startX + predicted * cell + 3.0, startY + actual * cell + cell * 0.62, label, 9.0);
+            }
+        }
+    }
+}
+
+void drawCountsTable(
+    cairo_t *context,
+    double x,
+    double y,
+    double width,
+    const std::array<size_t, 10> &actualCounts,
+    const std::array<double, 10> &predictedCounts,
+    const std::array<size_t, 100> &confusionCounts)
+{
+    setColor(context, 0.14, 0.16, 0.20);
+    cairo_rectangle(context, x, y, width, 250.0);
+    cairo_fill(context);
+    setColor(context, 0.88, 0.90, 0.94);
+    drawText(context, x + 14.0, y + 22.0, "Class counts", 15.0);
+
+    const char *headers[] = {"Class", "Actual", "Predicted", "Correct"};
+    const double columns[] = {x + 24.0, x + width * 0.34, x + width * 0.56, x + width * 0.80};
+    setColor(context, 0.64, 0.69, 0.76);
+    for (size_t column = 0; column < 4; ++column)
+        drawText(context, columns[column], y + 50.0, headers[column]);
+
+    for (size_t category = 0; category < actualCounts.size(); ++category)
+    {
+        char values[4][32];
+        std::snprintf(values[0], sizeof(values[0]), "%zu", category);
+        std::snprintf(values[1], sizeof(values[1]), "%zu", actualCounts[category]);
+        std::snprintf(values[2], sizeof(values[2]), "%.0f", predictedCounts[category]);
+        std::snprintf(values[3], sizeof(values[3]), "%zu", confusionCounts[category * 10 + category]);
+        setColor(context, 0.86, 0.88, 0.92);
+        for (size_t column = 0; column < 4; ++column)
+            drawText(context, columns[column], y + 72.0 + category * 17.0, values[column]);
+    }
+}
+}
 
 TrainingMetricsGui::TrainingMetricsGui()
 {
-    for (size_t category = 0; category < classPositions.size(); ++category)
-        classPositions[category] = static_cast<double>(category);
-
-    if (!SDL_Init(SDL_INIT_VIDEO))
-        throw std::runtime_error(SDL_GetError());
-    sdlInitialized = true;
-
-    window = SDL_CreateWindow("NN Training Metrics", 1100, 760, SDL_WINDOW_RESIZABLE);
+    gtk_init();
+    mainLoop = g_main_loop_new(nullptr, FALSE);
+    window = GTK_WINDOW(gtk_window_new());
     if (window == nullptr)
     {
-        const std::string error = SDL_GetError();
-        shutdown();
-        throw std::runtime_error(error);
+        g_main_loop_unref(mainLoop);
+        mainLoop = nullptr;
+        throw std::runtime_error("Could not create GTK training metrics window");
     }
 
-    renderer = SDL_CreateRenderer(window, nullptr);
-    if (renderer == nullptr)
-    {
-        const std::string error = SDL_GetError();
-        shutdown();
-        throw std::runtime_error(error);
-    }
+    g_object_ref_sink(window);
+    gtk_window_set_title(window, "NN Training Metrics");
+    gtk_window_set_default_size(window, 1100, 760);
+    g_signal_connect(window, "close-request", G_CALLBACK(onCloseRequest), this);
 
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImPlot::CreateContext();
-    imguiInitialized = true;
-    ImGui::StyleColorsDark();
+    GtkWidget *root = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+    GtkWidget *controls = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    gtk_widget_set_margin_top(controls, 8);
+    gtk_widget_set_margin_start(controls, 12);
+    gtk_widget_set_margin_end(controls, 12);
+    gtk_widget_set_margin_bottom(controls, 4);
 
-    if (!ImGui_ImplSDL3_InitForSDLRenderer(window, renderer))
-    {
-        shutdown();
-        throw std::runtime_error("Dear ImGui SDL3 backend initialization failed");
-    }
-    imguiSdlBackendInitialized = true;
+    startButton = gtk_button_new_with_label("Start");
+    pauseButton = gtk_button_new_with_label("Pause");
+    stopButton = gtk_button_new_with_label("Stop");
+    statusLabel = gtk_label_new("Bereit");
+    gtk_widget_set_hexpand(statusLabel, TRUE);
+    gtk_label_set_xalign(GTK_LABEL(statusLabel), 1.0f);
+    gtk_box_append(GTK_BOX(controls), startButton);
+    gtk_box_append(GTK_BOX(controls), pauseButton);
+    gtk_box_append(GTK_BOX(controls), stopButton);
+    gtk_box_append(GTK_BOX(controls), statusLabel);
+    g_signal_connect(startButton, "clicked", G_CALLBACK(onStartClicked), this);
+    g_signal_connect(pauseButton, "clicked", G_CALLBACK(onPauseClicked), this);
+    g_signal_connect(stopButton, "clicked", G_CALLBACK(onStopClicked), this);
+    gtk_box_append(GTK_BOX(root), controls);
 
-    if (!ImGui_ImplSDLRenderer3_Init(renderer))
-    {
-        shutdown();
-        throw std::runtime_error("Dear ImGui SDL renderer backend initialization failed");
-    }
-    imguiRendererBackendInitialized = true;
+    GtkWidget *scrolledWindow = gtk_scrolled_window_new();
+    drawingArea = gtk_drawing_area_new();
+    gtk_drawing_area_set_content_width(GTK_DRAWING_AREA(drawingArea), 1040);
+    gtk_drawing_area_set_content_height(GTK_DRAWING_AREA(drawingArea), 1280);
+    gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(drawingArea), drawCallback, this, nullptr);
+    gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(scrolledWindow), drawingArea);
+    gtk_widget_set_vexpand(scrolledWindow, TRUE);
+    gtk_box_append(GTK_BOX(root), scrolledWindow);
+    gtk_window_set_child(window, root);
+    updateControls();
+    gtk_window_present(window);
 }
 
 TrainingMetricsGui::~TrainingMetricsGui()
 {
-    shutdown();
-}
-
-void TrainingMetricsGui::shutdown() noexcept
-{
-    if (imguiRendererBackendInitialized)
-        ImGui_ImplSDLRenderer3_Shutdown();
-    if (imguiSdlBackendInitialized)
-        ImGui_ImplSDL3_Shutdown();
-    if (imguiInitialized)
-    {
-        ImPlot::DestroyContext();
-        ImGui::DestroyContext();
-    }
-    if (renderer != nullptr)
-        SDL_DestroyRenderer(renderer);
     if (window != nullptr)
-        SDL_DestroyWindow(window);
-    if (sdlInitialized)
-        SDL_Quit();
-
-    imguiRendererBackendInitialized = false;
-    imguiSdlBackendInitialized = false;
-    imguiInitialized = false;
-    renderer = nullptr;
-    window = nullptr;
-    sdlInitialized = false;
+    {
+        if (trainingSourceId != 0)
+            g_source_remove(trainingSourceId);
+        gtk_window_destroy(window);
+        g_object_unref(window);
+    }
+    if (mainLoop != nullptr)
+        g_main_loop_unref(mainLoop);
 }
 
-bool TrainingMetricsGui::processEvents()
+gboolean TrainingMetricsGui::onCloseRequest(GtkWindow *, gpointer userData)
 {
-    SDL_Event event;
-    while (SDL_PollEvent(&event))
+    auto *gui = static_cast<TrainingMetricsGui *>(userData);
+    gui->stopTraining();
+    g_main_loop_quit(gui->mainLoop);
+    return TRUE;
+}
+
+void TrainingMetricsGui::onStartClicked(GtkButton *, gpointer userData)
+{
+    static_cast<TrainingMetricsGui *>(userData)->startTraining();
+}
+
+void TrainingMetricsGui::onPauseClicked(GtkButton *, gpointer userData)
+{
+    static_cast<TrainingMetricsGui *>(userData)->pauseTraining();
+}
+
+void TrainingMetricsGui::onStopClicked(GtkButton *, gpointer userData)
+{
+    static_cast<TrainingMetricsGui *>(userData)->stopTraining();
+}
+
+gboolean TrainingMetricsGui::onTrainingStep(gpointer userData)
+{
+    auto *gui = static_cast<TrainingMetricsGui *>(userData);
+    if (!gui->trainingActive || gui->trainingStopped)
     {
-        ImGui_ImplSDL3_ProcessEvent(&event);
-        if (event.type == SDL_EVENT_QUIT)
-            running = false;
-        if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
-            event.window.windowID == SDL_GetWindowID(window))
-            running = false;
+        gui->trainingSourceId = 0;
+        return G_SOURCE_REMOVE;
     }
-    return running;
+
+    try
+    {
+        if (!gui->trainingStepCallback())
+        {
+            gui->trainingActive = false;
+            gui->trainingCompleted = true;
+            gui->trainingSourceId = 0;
+            gtk_label_set_text(GTK_LABEL(gui->statusLabel), "Abgeschlossen");
+            gui->updateControls();
+            return G_SOURCE_REMOVE;
+        }
+    }
+    catch (...)
+    {
+        gui->trainingError = std::current_exception();
+        gui->trainingActive = false;
+        gui->trainingStopped = true;
+        gui->trainingSourceId = 0;
+        gtk_label_set_text(GTK_LABEL(gui->statusLabel), "Fehler beim Training");
+        gui->updateControls();
+        g_main_loop_quit(gui->mainLoop);
+        return G_SOURCE_REMOVE;
+    }
+
+    return G_SOURCE_CONTINUE;
+}
+
+void TrainingMetricsGui::drawCallback(
+    GtkDrawingArea *,
+    cairo_t *context,
+    int width,
+    int height,
+    gpointer userData)
+{
+    static_cast<TrainingMetricsGui *>(userData)->draw(context, width, height);
+}
+
+void TrainingMetricsGui::setTrainingStepCallback(std::function<bool()> callback)
+{
+    if (!callback)
+        throw std::invalid_argument("Training step callback must not be empty");
+    trainingStepCallback = std::move(callback);
+}
+
+void TrainingMetricsGui::run()
+{
+    if (!trainingStepCallback)
+        throw std::logic_error("Training step callback has not been set");
+    g_main_loop_run(mainLoop);
+    rethrowTrainingError();
+}
+
+void TrainingMetricsGui::rethrowTrainingError() const
+{
+    if (trainingError)
+        std::rethrow_exception(trainingError);
+}
+
+void TrainingMetricsGui::startTraining()
+{
+    if (trainingStopped || trainingCompleted || !trainingStepCallback)
+        return;
+
+    trainingStarted = true;
+    trainingActive = true;
+    gtk_label_set_text(GTK_LABEL(statusLabel), "Training laeuft");
+    updateControls();
+    if (trainingSourceId == 0)
+        trainingSourceId = g_idle_add(onTrainingStep, this);
+}
+
+void TrainingMetricsGui::pauseTraining()
+{
+    if (!trainingActive || trainingStopped || trainingCompleted)
+        return;
+
+    trainingActive = false;
+    if (trainingSourceId != 0)
+    {
+        g_source_remove(trainingSourceId);
+        trainingSourceId = 0;
+    }
+    gtk_label_set_text(GTK_LABEL(statusLabel), "Pausiert");
+    updateControls();
+}
+
+void TrainingMetricsGui::stopTraining()
+{
+    trainingActive = false;
+    trainingStopped = true;
+    if (trainingSourceId != 0)
+    {
+        g_source_remove(trainingSourceId);
+        trainingSourceId = 0;
+    }
+    if (statusLabel != nullptr)
+        gtk_label_set_text(GTK_LABEL(statusLabel), "Gestoppt");
+    updateControls();
+}
+
+void TrainingMetricsGui::updateControls()
+{
+    if (startButton == nullptr)
+        return;
+    gtk_button_set_label(GTK_BUTTON(startButton), trainingStarted ? "Fortsetzen" : "Start");
+    gtk_widget_set_sensitive(startButton, !trainingActive && !trainingStopped && !trainingCompleted);
+    gtk_widget_set_sensitive(pauseButton, trainingActive);
+    gtk_widget_set_sensitive(stopButton, !trainingStopped && !trainingCompleted);
 }
 
 void TrainingMetricsGui::addMetrics(
@@ -125,7 +448,7 @@ void TrainingMetricsGui::setDiagnostics(
     this->normalizedConfusion = normalizedConfusion;
     this->meanConfidence = meanConfidence;
     hasDiagnostics = true;
-    for (size_t category = 0; category < classPositions.size(); ++category)
+    for (size_t category = 0; category < this->predictedCounts.size(); ++category)
     {
         this->predictedCounts[category] = static_cast<double>(predictedCounts[category]);
         this->classRecall[category] = static_cast<double>(classRecall[category]);
@@ -134,101 +457,49 @@ void TrainingMetricsGui::setDiagnostics(
 
 void TrainingMetricsGui::render()
 {
-    ImGui_ImplSDLRenderer3_NewFrame();
-    ImGui_ImplSDL3_NewFrame();
-    ImGui::NewFrame();
+    if (drawingArea == nullptr)
+        return;
+    gtk_widget_queue_draw(drawingArea);
+}
 
-    ImGui::SetNextWindowSize(ImVec2(1000.0f, 680.0f), ImGuiCond_FirstUseEver);
-    ImGui::Begin("Training metrics");
-    ImGui::Text("Test metrics are measured every 100 training steps.");
+void TrainingMetricsGui::draw(cairo_t *context, int width, int) const
+{
+    setColor(context, 0.08, 0.09, 0.12);
+    cairo_paint(context);
+
+    setColor(context, 0.94, 0.95, 0.98);
+    drawText(context, 30.0, 36.0, "Training metrics", 22.0);
+
+    char confidence[80];
+    std::snprintf(confidence, sizeof(confidence), "Mean confidence: %.4f", meanConfidence);
+    drawText(context, 30.0, 60.0, hasDiagnostics ? confidence : "Waiting for first evaluation.");
+
+    const double gap = 20.0;
+    const double chartWidth = std::max(300.0, (static_cast<double>(width) - 60.0 - gap) / 2.0);
+    const double left = 30.0;
+    const double right = left + chartWidth + gap;
+    drawLossChart(context, left, 80.0, chartWidth, 250.0, trainingLosses, testLosses);
+
+    double maximumPredictions = 0.0;
+    for (double value : predictedCounts)
+        maximumPredictions = std::max(maximumPredictions, value);
+    drawBarChart(context, right, 80.0, chartWidth, 250.0, "Predicted class distribution",
+                  predictedCounts, maximumPredictions, false);
+
     if (hasDiagnostics)
-        ImGui::Text("Mean confidence: %.4f", meanConfidence);
-
-    if (!steps.empty())
     {
-        const int count = static_cast<int>(steps.size());
-        if (ImPlot::BeginPlot("Loss"))
-        {
-            ImPlot::SetupAxes("Training step", "Cross-entropy");
-            ImPlot::PlotLine("Training loss", steps.data(), trainingLosses.data(), count);
-            ImPlot::PlotLine("Test loss", steps.data(), testLosses.data(), count);
-            ImPlot::EndPlot();
-        }
-
-        if (hasDiagnostics && ImPlot::BeginPlot("Predicted class distribution"))
-        {
-            ImPlot::SetupAxes("Predicted class", "Number of test samples");
-            ImPlot::SetupAxisTicks(ImAxis_X1, classPositions.data(), static_cast<int>(classPositions.size()));
-            ImPlot::PlotBars("Predicted", classPositions.data(), predictedCounts.data(),
-                             static_cast<int>(predictedCounts.size()), 0.7);
-            ImPlot::EndPlot();
-        }
-
-        if (hasDiagnostics && ImPlot::BeginPlot("Confusion matrix (row-normalized)"))
-        {
-            constexpr const char *classLabels[] = {
-                "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
-            ImPlot::SetupAxes("Predicted class", "Actual class");
-            ImPlot::SetupAxisTicks(ImAxis_X1, 0.5, 9.5, 10, classLabels, false);
-            ImPlot::SetupAxisTicks(ImAxis_Y1, 0.5, 9.5, 10, classLabels, false);
-            ImPlot::PlotHeatmap("Recall", normalizedConfusion.data(), 10, 10, 0.0, 1.0,
-                                "%.2f", ImPlotPoint(0, 0), ImPlotPoint(10, 10));
-            ImPlot::EndPlot();
-        }
-
-        if (hasDiagnostics && ImPlot::BeginPlot("Recall by actual class"))
-        {
-            ImPlot::SetupAxes("Actual class", "Recall");
-            ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, 1.0, ImPlotCond_Always);
-            ImPlot::SetupAxisTicks(ImAxis_X1, classPositions.data(), static_cast<int>(classPositions.size()));
-            ImPlot::PlotBars("Recall", classPositions.data(), classRecall.data(),
-                             static_cast<int>(classRecall.size()), 0.7);
-            ImPlot::EndPlot();
-        }
-
-        if (hasDiagnostics && ImGui::CollapsingHeader("Class counts"))
-        {
-            if (ImGui::BeginTable("ClassCounts", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg))
-            {
-                ImGui::TableSetupColumn("Class");
-                ImGui::TableSetupColumn("Actual");
-                ImGui::TableSetupColumn("Predicted");
-                ImGui::TableSetupColumn("Correct");
-                ImGui::TableHeadersRow();
-                for (size_t category = 0; category < actualCounts.size(); ++category)
-                {
-                    ImGui::TableNextRow();
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::Text("%zu", category);
-                    ImGui::TableSetColumnIndex(1);
-                    ImGui::Text("%zu", actualCounts[category]);
-                    ImGui::TableSetColumnIndex(2);
-                    ImGui::Text("%.0f", predictedCounts[category]);
-                    ImGui::TableSetColumnIndex(3);
-                    ImGui::Text("%zu", confusionCounts[category * 10 + category]);
-                }
-                ImGui::EndTable();
-            }
-        }
-
-        if (ImPlot::BeginPlot("Test accuracy"))
-        {
-            ImPlot::SetupAxes("Training step", "Accuracy");
-            ImPlot::SetupAxisLimits(ImAxis_Y1, 0.0, 1.0, ImPlotCond_Always);
-            ImPlot::PlotLine("Test accuracy", steps.data(), testAccuracies.data(), count);
-            ImPlot::EndPlot();
-        }
-    }
-    else
-    {
-        ImGui::Text("Waiting for first evaluation.");
+        drawConfusionMatrix(context, left, 350.0, chartWidth, 360.0, normalizedConfusion);
+        drawBarChart(context, right, 350.0, chartWidth, 360.0, "Recall by actual class",
+                      classRecall, 1.0, true);
+        drawCountsTable(context, left, 730.0, static_cast<double>(width) - 60.0,
+                        actualCounts, predictedCounts, confusionCounts);
     }
 
-    ImGui::End();
-    ImGui::Render();
-
-    if (!SDL_SetRenderDrawColor(renderer, 20, 22, 28, 255) || !SDL_RenderClear(renderer))
-        throw std::runtime_error(SDL_GetError());
-    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
-    SDL_RenderPresent(renderer);
+    if (!testAccuracies.empty())
+    {
+        std::vector<double> accuracy = testAccuracies;
+        drawChartFrame(context, left, 1000.0, static_cast<double>(width) - 60.0, 250.0, "Test accuracy");
+        drawLineSeries(context, left, 1000.0, static_cast<double>(width) - 60.0, 250.0,
+                       accuracy, 0.0, 1.0, 0.35, 0.68, 0.95);
+    }
 }

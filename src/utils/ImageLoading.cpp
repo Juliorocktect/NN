@@ -1,5 +1,49 @@
 #include "ImageLoading.h"
 
+#include <gtk/gtk.h>
+#include <stdexcept>
+
+namespace
+{
+struct ImageDisplay
+{
+    GMainLoop *loop;
+    guint timeoutSourceId = 0;
+};
+
+void drawImage(GtkDrawingArea *, cairo_t *context, int width, int height, gpointer userData)
+{
+    auto *surface = static_cast<cairo_surface_t *>(userData);
+    const double scaleX = static_cast<double>(width) / cairo_image_surface_get_width(surface);
+    const double scaleY = static_cast<double>(height) / cairo_image_surface_get_height(surface);
+    cairo_save(context);
+    cairo_scale(context, scaleX, scaleY);
+    cairo_set_source_surface(context, surface, 0.0, 0.0);
+    cairo_paint(context);
+    cairo_restore(context);
+}
+
+gboolean closeImageWindow(GtkWindow *, gpointer userData)
+{
+    auto *display = static_cast<ImageDisplay *>(userData);
+    if (display->timeoutSourceId != 0)
+    {
+        g_source_remove(display->timeoutSourceId);
+        display->timeoutSourceId = 0;
+    }
+    g_main_loop_quit(display->loop);
+    return FALSE;
+}
+
+gboolean finishImageDisplay(gpointer userData)
+{
+    auto *display = static_cast<ImageDisplay *>(userData);
+    display->timeoutSourceId = 0;
+    g_main_loop_quit(display->loop);
+    return G_SOURCE_REMOVE;
+}
+}
+
 namespace ImagePreProcessor
 {
     int readInt(std::ifstream &ifs)
@@ -233,37 +277,52 @@ namespace ImagePreProcessor
 
     void showImage(const std::vector<uint8_t> &pixels, int width, int height)
     {
-        SDL_Init(SDL_INIT_VIDEO);
+        if (width <= 0 || height <= 0 ||
+            pixels.size() != static_cast<size_t>(width) * static_cast<size_t>(height))
+            throw std::invalid_argument("Invalid image data or dimensions");
 
-        SDL_Window *window = SDL_CreateWindow("Image", width, height, 0);
-        SDL_Renderer *renderer = SDL_CreateRenderer(window, nullptr);
-
-        // Für Graustufenbild: Wir wandeln 8-bit Graustufen in RGB um
-        std::vector<uint32_t> rgbPixels(width * height);
-        for (int i = 0; i < width * height; ++i)
+        gtk_init();
+        std::vector<uint32_t> rgbPixels(pixels.size());
+        for (size_t i = 0; i < pixels.size(); ++i)
         {
-            uint8_t v = pixels[i];
-            rgbPixels[i] = (0xFF << 24) | (v << 16) | (v << 8) | v; // ARGB8888
+            const uint32_t value = pixels[i];
+            rgbPixels[i] = 0xFF000000U | (value << 16) | (value << 8) | value;
         }
 
-        SDL_Texture *texture = SDL_CreateTexture(
-            renderer,
-            SDL_PIXELFORMAT_ARGB8888,
-            SDL_TEXTUREACCESS_STREAMING,
+        cairo_surface_t *surface = cairo_image_surface_create_for_data(
+            reinterpret_cast<unsigned char *>(rgbPixels.data()),
+            CAIRO_FORMAT_RGB24,
             width,
-            height);
+            height,
+            width * static_cast<int>(sizeof(uint32_t)));
+        if (cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS)
+        {
+            const cairo_status_t status = cairo_surface_status(surface);
+            cairo_surface_destroy(surface);
+            throw std::runtime_error(cairo_status_to_string(status));
+        }
 
-        SDL_UpdateTexture(texture, nullptr, rgbPixels.data(), width * sizeof(uint32_t));
-        SDL_RenderClear(renderer);
-        SDL_RenderTexture(renderer, texture, nullptr, nullptr);
-        SDL_RenderPresent(renderer);
+        GtkWindow *window = GTK_WINDOW(gtk_window_new());
+        g_object_ref_sink(window);
+        gtk_window_set_title(window, "Image");
+        gtk_window_set_default_size(window, width, height);
+        GtkWidget *drawingArea = gtk_drawing_area_new();
+        gtk_drawing_area_set_content_width(GTK_DRAWING_AREA(drawingArea), width);
+        gtk_drawing_area_set_content_height(GTK_DRAWING_AREA(drawingArea), height);
+        gtk_drawing_area_set_draw_func(GTK_DRAWING_AREA(drawingArea), drawImage, surface, nullptr);
+        gtk_window_set_child(window, drawingArea);
 
-        SDL_Delay(2000); // 2 Sekunden anzeigen
-
-        SDL_DestroyTexture(texture);
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
+        ImageDisplay display{g_main_loop_new(nullptr, FALSE)};
+        g_signal_connect(window, "close-request", G_CALLBACK(closeImageWindow), &display);
+        display.timeoutSourceId = g_timeout_add_seconds(2, finishImageDisplay, &display);
+        gtk_window_present(window);
+        g_main_loop_run(display.loop);
+        if (display.timeoutSourceId != 0)
+            g_source_remove(display.timeoutSourceId);
+        gtk_window_destroy(window);
+        g_object_unref(window);
+        g_main_loop_unref(display.loop);
+        cairo_surface_destroy(surface);
     }
 
     void showImage(const float *pixels, int width, int height)
