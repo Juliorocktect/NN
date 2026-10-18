@@ -16,8 +16,10 @@ float *CudaLaunchers::add(float *mat1, const float *mat2, float *matResult, size
     int blocks = (size + threads - 1) / threads;
 
     CudaKernels::matrixAddition<<<blocks, threads>>>(mat1, mat2, matResult, size);
-    cudaDeviceSynchronize();
     cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
+    error = cudaDeviceSynchronize();
     if (error != cudaSuccess)
         throw std::runtime_error(cudaGetErrorString(error));
     return matResult;

@@ -45,8 +45,10 @@ void CudaLaunchers::sigmoid(float *mat, float *matResult, size_t size)
     int threads = 256;
     int blocks = (size + threads - 1) / threads;
     CudaKernels::sigmoidKernel<<<blocks, threads>>>(mat, matResult, size);
-    cudaDeviceSynchronize();
     cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
+    error = cudaDeviceSynchronize();
     if (error != cudaSuccess)
         throw std::runtime_error(cudaGetErrorString(error));
 }

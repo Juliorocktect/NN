@@ -16,5 +16,10 @@ void CudaLaunchers::matrixMultiplicationWithFloat(float *mat, float value, float
     dim3 block(rows);
     size_t size = rows * cols;
     CudaKernels::matrixMultiplicationWithFloatKernel<<<grid, block>>>(mat, value, matResult, size);
-    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
+    error = cudaDeviceSynchronize();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
 }

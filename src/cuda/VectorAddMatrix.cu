@@ -15,5 +15,10 @@ void CudaLaunchers::vectorAddMatrix(float *mat, float *vec, float *matResult, si
     dim3 grid(cols);
     dim3 block(rows);
     CudaKernels::vectorAddMatrixKernel<<<grid, block>>>(mat, vec, matResult, sizeVec, rows, cols);
-    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
+    error = cudaDeviceSynchronize();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
 }

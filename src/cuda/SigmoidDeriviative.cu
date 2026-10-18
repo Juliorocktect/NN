@@ -46,7 +46,12 @@ float *CudaLaunchers::sigmoidDeriviative(float *input, float *output, size_t siz
     int threadsPerBlock = 256;
     int blocksPerGrid = (size + threadsPerBlock - 1) / threadsPerBlock;
     CudaKernels::sigmoidDeriviative<<<blocksPerGrid, threadsPerBlock>>>(input, output, size);
-    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
+    error = cudaDeviceSynchronize();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
     return output;
 }
 

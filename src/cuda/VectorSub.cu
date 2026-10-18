@@ -6,7 +6,12 @@ void CudaLaunchers::vectorSubtraction(const float *vec1, const float *vec2, floa
     int threads = 256;
     int blocks = (size + threads - 1) / threads;
     CudaKernels::vectorSubtraction<<<blocks, threads>>>(vec1, vec2, vecResult, size);
-    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
+    error = cudaDeviceSynchronize();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
 }
 
 __global__ void CudaKernels::vectorSubtraction(const float *vec1, const float *vec2, float *vecResult, size_t size)

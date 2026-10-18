@@ -6,7 +6,12 @@ float *CudaLaunchers::vectorAddition(const float *vec1, const float *vec2, float
     int threads = 256;
     int blocks = (size + threads - 1) / threads;
     CudaKernels::vectorAddition<<<blocks, threads>>>(vec1, vec2, vecResult, size);
-    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
+    error = cudaDeviceSynchronize();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
     return vecResult;
 }
 

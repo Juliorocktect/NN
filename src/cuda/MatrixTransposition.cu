@@ -17,6 +17,11 @@ float *CudaLaunchers::transpose(const float *mat, float *matResult, int rows, in
     dim3 blocksPerGrid((cols + threadsPerBlock.x - 1) / threadsPerBlock.x, (rows + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
     CudaKernels::transposeMatrixKernel<<<blocksPerGrid, threadsPerBlock>>>(mat, matResult, rows, cols, cols, rows);
-    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
+    error = cudaDeviceSynchronize();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
     return matResult;
 }

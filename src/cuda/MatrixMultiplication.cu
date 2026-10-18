@@ -23,6 +23,11 @@ float *CudaLaunchers::multiply(float *mat1, const float *mat2, float *matResult,
                        (rows1 + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
     CudaKernels::matrixMultiplication<<<blocksPerGrid, threadsPerBlock>>>(mat1, mat2, matResult, rows1, cols1, cols2);
-    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
+    error = cudaDeviceSynchronize();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
     return matResult;
 }

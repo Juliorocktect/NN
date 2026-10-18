@@ -79,7 +79,12 @@ float CudaLaunchers::sumCrossEntropyLoss(const float *y_hat, const float *labels
     cudaMalloc((void **)&d_loss, numSamples * sizeof(float));
 
     CudaKernels::crossEntropyLossKernel<<<blocksPerGrid, threadsPerBlock>>>(y_hat, labels, d_loss, numSamples);
-    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
+    error = cudaDeviceSynchronize();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
     cudaMemcpy(h_loss, d_loss, numSamples * sizeof(float), cudaMemcpyDeviceToHost);
     float sum = 0.0;
     for (int i = 0; i < numSamples; ++i)
@@ -87,8 +92,5 @@ float CudaLaunchers::sumCrossEntropyLoss(const float *y_hat, const float *labels
     float meanLoss = sum / numSamples;
     delete[] h_loss;
     cudaFree(d_loss);
-    cudaError_t error = cudaGetLastError();
-    if (error != cudaSuccess)
-        throw std::runtime_error(cudaGetErrorString(error));
     return meanLoss;
 }

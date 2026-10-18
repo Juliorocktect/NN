@@ -56,5 +56,10 @@ void CudaLaunchers::meanMatrixRowise(float *mat, float *matResult, size_t rows, 
     int threadsPerBlock = 512;
     int blocksPerGrid = (rows * cols + threadsPerBlock - 1) / threadsPerBlock;
     CudaKernels::meanMatrixRowise<<<threadsPerBlock, blocksPerGrid>>>(mat, matResult, rows, cols);
-    cudaDeviceSynchronize();
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
+    error = cudaDeviceSynchronize();
+    if (error != cudaSuccess)
+        throw std::runtime_error(cudaGetErrorString(error));
 }

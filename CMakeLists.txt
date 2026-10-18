@@ -1,18 +1,20 @@
 cmake_minimum_required(VERSION 3.25)
+project(VNNProjekt LANGUAGES CXX CUDA)
+
 enable_testing()
+# Set C++ Standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CUDA_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER}")
 message(STATUS "C++ compiler ID: ${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "C++ compiler version: ${CMAKE_CXX_COMPILER_VERSION}")
 
 message(STATUS "CUDA compiler: ${CMAKE_CUDA_COMPILER}")
 message(STATUS "CUDA host compiler: ${CMAKE_CUDA_HOST_COMPILER}")
-# Set C++ Standard
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CUDA_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #windows compile options
 # set(CMAKE_CUDA_COMPILER "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.3/bin/nvcc.exe")
-project(VNNProjekt LANGUAGES CXX CUDA)
 find_package(CUDAToolkit REQUIRED)
 include_directories(include)
 
@@ -67,7 +69,7 @@ CUDA_RESOLVE_DEVICE_SYMBOLS ON
 #build test envoirenment
 find_package(GTest REQUIRED)
 add_executable(nn_tests ${TEST_FILES})
-target_compile_features(nn_tests PRIVATE cxx_std_17)
+#target_compile_features(nn_tests PRIVATE cxx_std_17)
 set_target_properties(nn_tests PROPERTIES
     LINKER_LANGUAGE CXX
 )
