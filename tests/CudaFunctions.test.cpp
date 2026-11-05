@@ -3,6 +3,7 @@
 #include <cmath>
 #include <numeric>
 #include <vector>
+#include "GMatrix.hpp"
 #include "GVector.hpp"
 #include "CudaLaunchers.cuh"
 
@@ -62,6 +63,30 @@ TEST(CudaCrossEntropyLossTest, ReturnsZeroForInvalidLabel)
     EXPECT_EQ(cudaGetLastError(), cudaSuccess);
 }
 
+TEST(CudaCrossEntropyLossTest, ComputesMeanLossAcrossThreadBlockBoundary)
+{
+    constexpr int numSamples = 513;
+    std::vector<float> predictions(10 * numSamples, 0.0f);
+    std::vector<float> labels(numSamples);
+    for (int sample = 0; sample < numSamples; ++sample)
+    {
+        const int label = sample % 10;
+        labels[sample] = static_cast<float>(label);
+        predictions[label * numSamples + sample] = 0.75f;
+    }
+
+    GVector predictions_d(predictions.size());
+    GVector labels_d(labels.size());
+    predictions_d.upload(predictions.data());
+    labels_d.upload(labels.data());
+
+    const float loss = CudaLaunchers::sumCrossEntropyLoss(
+        predictions_d.getVector(), labels_d.getVector(), numSamples);
+
+    EXPECT_NEAR(loss, -std::log(0.75f), 1e-5f);
+    EXPECT_EQ(cudaGetLastError(), cudaSuccess);
+}
+
 TEST(CudaLaunchersHotEncodeYMatrixTest, EncodesRepeatedLabelsCorrectly)
 {
     const size_t numSamples = 4;
@@ -89,6 +114,36 @@ TEST(CudaLaunchersHotEncodeYMatrixTest, EncodesRepeatedLabelsCorrectly)
 
     cudaFree(labels_d);
     cudaFree(result_d);
+}
+
+TEST(CudaLaunchersHotEncodeYMatrixTest, EncodesSamplesAcrossThreadBlockBoundary)
+{
+    constexpr size_t numSamples = 257;
+    std::vector<float> labelsHost(numSamples);
+    for (size_t sample = 0; sample < numSamples; ++sample)
+        labelsHost[sample] = static_cast<float>(sample % 10);
+
+    GVector labelsDevice(numSamples);
+    GMatrix encodedDevice(10, numSamples);
+    labelsDevice.upload(labelsHost.data());
+    CudaLaunchers::hotEncodeYMatrix(
+        labelsDevice.getVector(), encodedDevice.getMatrix(), numSamples);
+
+    std::vector<float> encodedHost(10 * numSamples);
+    ASSERT_EQ(cudaMemcpy(
+                  encodedHost.data(),
+                  encodedDevice.getMatrix(),
+                  encodedHost.size() * sizeof(float),
+                  cudaMemcpyDeviceToHost),
+              cudaSuccess);
+    for (size_t category = 0; category < 10; ++category)
+    {
+        for (size_t sample = 0; sample < numSamples; ++sample)
+        {
+            const float expected = sample % 10 == category ? 1.0f : 0.0f;
+            EXPECT_EQ(encodedHost[category * numSamples + sample], expected);
+        }
+    }
 }
 
 TEST(CudaLaunchersHotEncodeYMatrixTest, EncodesEveryClassCorrectly)

@@ -72,6 +72,17 @@ private:
     GMatrix dW4;       // Derivation of weights Output Layer 4 10x180
     GVector labels;    // 60.000 labels to the 60.000 images points to gpu
 
+    double calculateGradientCheckLoss(const float *hostLabels, size_t sampleCount);
+    bool checkGradientParameterBlock(
+        const char *name,
+        float *parameters,
+        float *gradients,
+        size_t parameterCount,
+        const float *hostLabels,
+        size_t sampleCount,
+        float epsilon,
+        float tolerance);
+
 public:
     NNG();
     NNG(size_t sizeTrainingData);
@@ -94,6 +105,12 @@ public:
     float calcAccuracy(float *testData, float *testLabels, size_t sizeTestData);
     float trainStep();
     void copyParametersFrom(const NNG &source);
+    bool runGradientCheck(
+        const float *inputData,
+        const float *labels,
+        size_t sampleCount,
+        float epsilon = 1e-1f,
+        float tolerance = 5e-2f) const;
     EvaluationMetrics evaluate(const float *testData, const float *testLabels);
     void run(size_t times);
 };

@@ -14,8 +14,8 @@ int main()
     {
         constexpr size_t trainingCount = 40000;
         constexpr size_t requestedTestCount = 10000;
-        constexpr size_t trainingSteps = 20000;
-        constexpr size_t evaluationInterval = 100;
+        constexpr size_t TRAININGS_STEPS = 20000;
+        constexpr size_t EVALUATION_INTERVAL = 10;
 
         std::vector<float> labels = ImagePreProcessor::readLabelsAsFloat();
         if (labels.size() < trainingCount)
@@ -40,10 +40,10 @@ int main()
 
         size_t step = 0;
         gui.setTrainingStepCallback([&]()
-        {
+                                    {
             ++step;
             const float trainingLoss = network.trainStep();
-            if (step % evaluationInterval == 0 || step == 1 || step == trainingSteps)
+            if (step % EVALUATION_INTERVAL == 0 || step == 1 || step == TRAININGS_STEPS)
             {
                 evaluator.copyParametersFrom(network);
                 const EvaluationMetrics metrics = evaluator.evaluate(testImages.get(), testLabels.data());
@@ -66,11 +66,28 @@ int main()
                     std::cout << ' ' << category << '=' << metrics.predictedCounts[category];
                 std::cout << '\n';
             }
-            return step < trainingSteps;
-        });
+            return step < TRAININGS_STEPS; });
         gui.run();
 
-        return 0;
+            constexpr size_t gradientCheckSampleCount = 16;
+            std::vector<float> gradientCheckImages(SIZE_INPUT_LAYER * gradientCheckSampleCount);
+            for (size_t feature = 0; feature < SIZE_INPUT_LAYER; ++feature)
+            {
+                for (size_t sample = 0; sample < gradientCheckSampleCount; ++sample)
+                {
+                    gradientCheckImages[feature * gradientCheckSampleCount + sample] =
+                        images[feature * trainingCount + sample];
+                }
+            }
+            if (!network.runGradientCheck(
+                    gradientCheckImages.data(),
+                    labels.data(),
+                    gradientCheckSampleCount))
+            {
+                std::cerr << "Warnung: Gradiententest am Trainingsende ist fehlgeschlagen.\n";
+            }
+
+            return 0;
     }
     catch (const std::exception &error)
     {

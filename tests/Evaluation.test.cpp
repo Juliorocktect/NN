@@ -94,3 +94,21 @@ TEST(NNGEvaluationTest, RejectsMissingEvaluationInputs)
     EXPECT_THROW(network.evaluate(nullptr, label.data()), std::invalid_argument);
     EXPECT_THROW(network.evaluate(label.data(), nullptr), std::invalid_argument);
 }
+
+TEST(NNGGradientCheckTest, MatchesAnalyticalGradientsAgainstFiniteDifferences)
+{
+    constexpr size_t count = 4;
+    NNG network(1);
+    std::vector<float> images(SIZE_INPUT_LAYER * count);
+    for (size_t feature = 0; feature < SIZE_INPUT_LAYER; ++feature)
+    {
+        for (size_t sample = 0; sample < count; ++sample)
+        {
+            images[feature * count + sample] =
+                static_cast<float>((feature * (sample + 1)) % 255) / 255.0f;
+        }
+    }
+    const std::vector<float> labels{0.0f, 1.0f, 3.0f, 9.0f};
+
+    EXPECT_TRUE(network.runGradientCheck(images.data(), labels.data(), count));
+}

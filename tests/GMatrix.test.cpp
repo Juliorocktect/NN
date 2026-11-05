@@ -3,6 +3,8 @@
 
 #include <cuda_runtime.h>
 
+#include <algorithm>
+#include <cmath>
 #include <vector>
 
 std::vector<float> copyToHost(GMatrix &matrix)
@@ -141,6 +143,39 @@ TEST(GMatrixTest, MultiplicationMultipliesMatrices)
     EXPECT_EQ(copyToHost(result), (std::vector<float>{58.0f, 64.0f, 139.0f, 154.0f}));
 }
 
+TEST(GMatrixTest, MatrixMultiplicationHandlesPartialBlocks)
+{
+    constexpr size_t rows = 17;
+    constexpr size_t inner = 19;
+    constexpr size_t cols = 18;
+    GMatrix left(rows, inner);
+    GMatrix right(inner, cols);
+    std::vector<float> leftValues(rows * inner);
+    std::vector<float> rightValues(inner * cols);
+    for (size_t index = 0; index < leftValues.size(); ++index)
+        leftValues[index] = static_cast<float>(static_cast<int>(index % 7) - 3) / 5.0f;
+    for (size_t index = 0; index < rightValues.size(); ++index)
+        rightValues[index] = static_cast<float>(static_cast<int>(index % 5) - 2) / 4.0f;
+    copyToDevice(left, leftValues);
+    copyToDevice(right, rightValues);
+
+    GMatrix result = left * right;
+
+    ASSERT_EQ(result.getRows(), rows);
+    ASSERT_EQ(result.getCols(), cols);
+    const std::vector<float> actual = copyToHost(result);
+    for (size_t row = 0; row < rows; ++row)
+    {
+        for (size_t col = 0; col < cols; ++col)
+        {
+            float expected = 0.0f;
+            for (size_t index = 0; index < inner; ++index)
+                expected += leftValues[row * inner + index] * rightValues[index * cols + col];
+            EXPECT_NEAR(actual[row * cols + col], expected, 1e-5f);
+        }
+    }
+}
+
 TEST(GMatrixTest, DivisionDividesEveryElement)
 {
     GMatrix matrix(2, 2);
@@ -149,6 +184,39 @@ TEST(GMatrixTest, DivisionDividesEveryElement)
     GMatrix result = matrix / 2.0;
 
     EXPECT_EQ(copyToHost(result), (std::vector<float>{1.0f, 2.0f, 3.0f, 4.0f}));
+}
+
+TEST(GMatrixTest, ElementwiseOperationsHandlePartialThreadBlocks)
+{
+    constexpr size_t rows = 17;
+    constexpr size_t cols = 19;
+    GMatrix left(rows, cols);
+    GMatrix right(rows, cols);
+    std::vector<float> leftValues(rows * cols);
+    std::vector<float> rightValues(rows * cols);
+    for (size_t index = 0; index < leftValues.size(); ++index)
+    {
+        leftValues[index] = static_cast<float>(static_cast<int>(index % 13) - 6);
+        rightValues[index] = static_cast<float>(index % 5 + 1);
+    }
+    copyToDevice(left, leftValues);
+    copyToDevice(right, rightValues);
+
+    GMatrix sum = left + right;
+    GMatrix difference = left - right;
+    GMatrix scaled = left * 2.0f;
+    GMatrix quotient = right / 2.0;
+    const std::vector<float> actualSum = copyToHost(sum);
+    const std::vector<float> actualDifference = copyToHost(difference);
+    const std::vector<float> actualScaled = copyToHost(scaled);
+    const std::vector<float> actualQuotient = copyToHost(quotient);
+    for (size_t index = 0; index < leftValues.size(); ++index)
+    {
+        EXPECT_FLOAT_EQ(actualSum[index], leftValues[index] + rightValues[index]);
+        EXPECT_FLOAT_EQ(actualDifference[index], leftValues[index] - rightValues[index]);
+        EXPECT_FLOAT_EQ(actualScaled[index], leftValues[index] * 2.0f);
+        EXPECT_FLOAT_EQ(actualQuotient[index], rightValues[index] / 2.0f);
+    }
 }
 
 TEST(GMatrixTest, TransposeSwapsDimensionsAndValues)
@@ -161,6 +229,27 @@ TEST(GMatrixTest, TransposeSwapsDimensionsAndValues)
     EXPECT_EQ(result.getRows(), 3);
     EXPECT_EQ(result.getCols(), 2);
     EXPECT_EQ(copyToHost(result), (std::vector<float>{1.0f, 4.0f, 2.0f, 5.0f, 3.0f, 6.0f}));
+}
+
+TEST(GMatrixTest, TransposesRectangularMatricesAcrossBlockBoundaries)
+{
+    constexpr size_t rows = 17;
+    constexpr size_t cols = 19;
+    GMatrix matrix(rows, cols);
+    std::vector<float> values(rows * cols);
+    for (size_t index = 0; index < values.size(); ++index)
+        values[index] = static_cast<float>(index + 1);
+    copyToDevice(matrix, values);
+
+    GMatrix result = matrix.transpose();
+
+    ASSERT_EQ(result.getRows(), cols);
+    ASSERT_EQ(result.getCols(), rows);
+    std::vector<float> expected(cols * rows);
+    for (size_t row = 0; row < rows; ++row)
+        for (size_t col = 0; col < cols; ++col)
+            expected[col * rows + row] = values[row * cols + col];
+    EXPECT_EQ(copyToHost(result), expected);
 }
 
 TEST(GMatrixTest, SoftmaxNormalizesEachColumn)
@@ -181,6 +270,35 @@ TEST(GMatrixTest, SoftmaxNormalizesEachColumn)
     for (size_t index = 0; index < expected.size(); ++index)
     {
         EXPECT_NEAR(actual[index], expected[index], 1e-5f);
+    }
+}
+
+TEST(GMatrixTest, SoftmaxHandlesRowsAcrossThreadBlockBoundary)
+{
+    constexpr size_t rows = 257;
+    constexpr size_t cols = 17;
+    GMatrix matrix(rows, cols);
+    std::vector<float> values(rows * cols);
+    for (size_t row = 0; row < rows; ++row)
+        for (size_t col = 0; col < cols; ++col)
+            values[row * cols + col] = static_cast<float>((row + col) % 11) / 5.0f;
+    copyToDevice(matrix, values);
+
+    GMatrix result = matrix.softmax();
+    const std::vector<float> actual = copyToHost(result);
+    for (size_t col = 0; col < cols; ++col)
+    {
+        float maxValue = values[col];
+        for (size_t row = 1; row < rows; ++row)
+            maxValue = std::max(maxValue, values[row * cols + col]);
+        double sum = 0.0;
+        for (size_t row = 0; row < rows; ++row)
+            sum += std::exp(values[row * cols + col] - maxValue);
+        for (size_t row = 0; row < rows; ++row)
+        {
+            const double expected = std::exp(values[row * cols + col] - maxValue) / sum;
+            EXPECT_NEAR(actual[row * cols + col], expected, 1e-6);
+        }
     }
 }
 
@@ -225,6 +343,57 @@ TEST(GMatrixTest, CalculatesMeanOfEachRow)
     EXPECT_NEAR(actual[0], 2.5f, 1e-6f);
     EXPECT_NEAR(actual[1], 25.0f, 1e-6f);
     EXPECT_NEAR(actual[2], 0.0f, 1e-6f);
+}
+
+TEST(GMatrixTest, CalculatesMeansAcrossMoreThanOneThreadBlockOfRows)
+{
+    constexpr size_t rows = 257;
+    constexpr size_t cols = 3;
+    GMatrix matrix(rows, cols);
+    std::vector<float> values(rows * cols);
+    std::vector<float> expected(rows);
+    for (size_t row = 0; row < rows; ++row)
+    {
+        for (size_t col = 0; col < cols; ++col)
+        {
+            values[row * cols + col] = static_cast<float>(row) + static_cast<float>(col) * 0.5f;
+            expected[row] += values[row * cols + col] / static_cast<float>(cols);
+        }
+    }
+    copyToDevice(matrix, values);
+
+    GVector means = matrix.calcMeanRowise();
+    std::vector<float> actual(rows);
+    ASSERT_EQ(cudaMemcpy(actual.data(), means.getVector(), rows * sizeof(float), cudaMemcpyDeviceToHost), cudaSuccess);
+    for (size_t row = 0; row < rows; ++row)
+        EXPECT_NEAR(actual[row], expected[row], 1e-5f);
+}
+
+TEST(GMatrixTest, RowVectorAdditionHandlesMoreRowsThanThreadsPerBlock)
+{
+    constexpr size_t rows = 1025;
+    constexpr size_t cols = 3;
+    GMatrix matrix(rows, cols);
+    GVector vector(rows);
+    std::vector<float> matrixValues(rows * cols);
+    std::vector<float> vectorValues(rows);
+    std::vector<float> expected(rows * cols);
+    for (size_t row = 0; row < rows; ++row)
+    {
+        vectorValues[row] = static_cast<float>(row) / 10.0f;
+        for (size_t col = 0; col < cols; ++col)
+        {
+            const size_t index = row * cols + col;
+            matrixValues[index] = static_cast<float>(index) / 20.0f;
+            expected[index] = matrixValues[index] + vectorValues[row];
+        }
+    }
+    copyToDevice(matrix, matrixValues);
+    copyToDevice(vector, vectorValues);
+
+    GMatrix result = matrix + vector;
+
+    EXPECT_EQ(copyToHost(result), expected);
 }
 
 TEST(GMatrixTest, MultiplyWithFloatMultipliesEveryElement)

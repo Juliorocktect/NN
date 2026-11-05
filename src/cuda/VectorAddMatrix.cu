@@ -3,17 +3,22 @@
 
 __global__ void CudaKernels::vectorAddMatrixKernel(float *mat, float *vec, float *mat_result, size_t sizeVec, size_t rows, size_t cols)
 {
-    int row = threadIdx.x;
-    int col = blockIdx.x;
-    if (row < rows && col < cols)
+    size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+    const size_t rowCount = rows < sizeVec ? rows : sizeVec;
+    const size_t total = rowCount * cols;
+    if (index < total)
     {
-        mat_result[row * cols + col] = mat[row * cols + col] + vec[row];
+        const size_t row = index / cols;
+        mat_result[index] = mat[index] + vec[row];
     }
 }
 void CudaLaunchers::vectorAddMatrix(float *mat, float *vec, float *matResult, size_t sizeVec, size_t rows, size_t cols)
 {
-    dim3 grid(cols);
-    dim3 block(rows);
+    constexpr int threadsPerBlock = 256;
+    const size_t total = rows * cols;
+    const size_t blocks = (total + threadsPerBlock - 1) / threadsPerBlock;
+    dim3 grid(static_cast<unsigned int>(blocks));
+    dim3 block(threadsPerBlock);
     CudaKernels::vectorAddMatrixKernel<<<grid, block>>>(mat, vec, matResult, sizeVec, rows, cols);
     cudaError_t error = cudaGetLastError();
     if (error != cudaSuccess)

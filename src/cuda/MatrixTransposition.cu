@@ -14,7 +14,7 @@ __global__ void CudaKernels::transposeMatrixKernel(const float *input, float *ou
 float *CudaLaunchers::transpose(const float *mat, float *matResult, int rows, int cols)
 {
     dim3 threadsPerBlock(16, 16);
-    dim3 blocksPerGrid((cols + threadsPerBlock.x - 1) / threadsPerBlock.x, (rows + threadsPerBlock.y - 1) / threadsPerBlock.y);
+    dim3 blocksPerGrid((rows + threadsPerBlock.x - 1) / threadsPerBlock.x, (cols + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
     CudaKernels::transposeMatrixKernel<<<blocksPerGrid, threadsPerBlock>>>(mat, matResult, rows, cols, cols, rows);
     cudaError_t error = cudaGetLastError();
