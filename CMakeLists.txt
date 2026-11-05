@@ -17,7 +17,7 @@ message(STATUS "CUDA host compiler: ${CMAKE_CUDA_HOST_COMPILER}")
 # set(CMAKE_CUDA_COMPILER "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v13.3/bin/nvcc.exe")
 find_package(CUDAToolkit REQUIRED)
 include_directories(include)
-
+include_directories(include/Metrics/)
 #get test files
 file(GLOB TEST_FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cu"
@@ -46,7 +46,7 @@ add_library(vnn_lib
     src/algorithms/NNG.cpp
     src/utils/ImageLoading.cpp
     src/utils/Metrics/Metrics.cpp
-    src/utils/MetricsCsvWriter.cpp
+    src/utils/Metrics/MetricsCsvWriter.cpp
 )
 
 target_include_directories(MATHS PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
