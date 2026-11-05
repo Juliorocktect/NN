@@ -45,6 +45,7 @@ add_library(vnn_lib
     src/algorithms/forwardPropNNG.cpp
     src/algorithms/NNG.cpp
     src/utils/ImageLoading.cpp
+    src/utils/Metrics/Metrics.cpp
     src/utils/MetricsCsvWriter.cpp
 )
 

@@ -266,14 +266,18 @@ TrainingMetricsGui::TrainingMetricsGui()
     gtk_window_set_child(window, root);
     updateControls();
     gtk_window_present(window);
+    uiUpdateSourceId = g_timeout_add(50, onUiUpdate, this);
 }
 
 TrainingMetricsGui::~TrainingMetricsGui()
 {
+    stopTraining();
+    if (trainingThread.joinable())
+        trainingThread.join();
+    if (uiUpdateSourceId != 0)
+        g_source_remove(uiUpdateSourceId);
     if (window != nullptr)
     {
-        if (trainingSourceId != 0)
-            g_source_remove(trainingSourceId);
         gtk_window_destroy(window);
         g_object_unref(window);
     }
@@ -304,37 +308,29 @@ void TrainingMetricsGui::onStopClicked(GtkButton *, gpointer userData)
     static_cast<TrainingMetricsGui *>(userData)->stopTraining();
 }
 
-gboolean TrainingMetricsGui::onTrainingStep(gpointer userData)
+gboolean TrainingMetricsGui::onUiUpdate(gpointer userData)
 {
-    auto *gui = static_cast<TrainingMetricsGui *>(userData);
-    if (!gui->trainingActive || gui->trainingStopped)
+    TrainingMetricsGui *gui = static_cast<TrainingMetricsGui *>(userData);
+    gui->applyQueuedMetrics();
+    if (gui->workerFinished.load(std::memory_order_acquire))
     {
-        gui->trainingSourceId = 0;
-        return G_SOURCE_REMOVE;
-    }
-
-    try
-    {
-        if (!gui->trainingStepCallback())
+        if (gui->trainingThread.joinable())
+            gui->trainingThread.join();
+        if (gui->trainingError)
+        {
+            gui->trainingActive = false;
+            gui->trainingStopped = true;
+            gtk_label_set_text(GTK_LABEL(gui->statusLabel), "Fehler beim Training");
+            gui->updateControls();
+            g_main_loop_quit(gui->mainLoop);
+        }
+        else if (!gui->trainingStopped)
         {
             gui->trainingActive = false;
             gui->trainingCompleted = true;
-            gui->trainingSourceId = 0;
             gtk_label_set_text(GTK_LABEL(gui->statusLabel), "Abgeschlossen");
             gui->updateControls();
-            return G_SOURCE_REMOVE;
         }
-    }
-    catch (...)
-    {
-        gui->trainingError = std::current_exception();
-        gui->trainingActive = false;
-        gui->trainingStopped = true;
-        gui->trainingSourceId = 0;
-        gtk_label_set_text(GTK_LABEL(gui->statusLabel), "Fehler beim Training");
-        gui->updateControls();
-        g_main_loop_quit(gui->mainLoop);
-        return G_SOURCE_REMOVE;
     }
 
     return G_SOURCE_CONTINUE;
@@ -350,18 +346,21 @@ void TrainingMetricsGui::drawCallback(
     static_cast<TrainingMetricsGui *>(userData)->draw(context, width, height);
 }
 
-void TrainingMetricsGui::setTrainingStepCallback(std::function<bool()> callback)
+void TrainingMetricsGui::setTrainingStepCallback(TrainingStepCallback callback, void *userData)
 {
-    if (!callback)
+    if (callback == nullptr)
         throw std::invalid_argument("Training step callback must not be empty");
-    trainingStepCallback = std::move(callback);
+    trainingStepCallback = callback;
+    trainingStepUserData = userData;
 }
 
 void TrainingMetricsGui::run()
 {
-    if (!trainingStepCallback)
+    if (trainingStepCallback == nullptr)
         throw std::logic_error("Training step callback has not been set");
     g_main_loop_run(mainLoop);
+    if (trainingThread.joinable())
+        trainingThread.join();
     rethrowTrainingError();
 }
 
@@ -373,15 +372,23 @@ void TrainingMetricsGui::rethrowTrainingError() const
 
 void TrainingMetricsGui::startTraining()
 {
-    if (trainingStopped || trainingCompleted || !trainingStepCallback)
+    if (trainingStopped || trainingCompleted || trainingStepCallback == nullptr)
         return;
 
     trainingStarted = true;
     trainingActive = true;
+    {
+        std::lock_guard<std::mutex> lock(trainingMutex);
+        workerActive = true;
+    }
+    if (!trainingThread.joinable())
+    {
+        workerFinished.store(false, std::memory_order_release);
+        trainingThread = std::thread(&TrainingMetricsGui::runTrainingWorker, this);
+    }
+    trainingCondition.notify_one();
     gtk_label_set_text(GTK_LABEL(statusLabel), "Training laeuft");
     updateControls();
-    if (trainingSourceId == 0)
-        trainingSourceId = g_idle_add(onTrainingStep, this);
 }
 
 void TrainingMetricsGui::pauseTraining()
@@ -390,10 +397,9 @@ void TrainingMetricsGui::pauseTraining()
         return;
 
     trainingActive = false;
-    if (trainingSourceId != 0)
     {
-        g_source_remove(trainingSourceId);
-        trainingSourceId = 0;
+        std::lock_guard<std::mutex> lock(trainingMutex);
+        workerActive = false;
     }
     gtk_label_set_text(GTK_LABEL(statusLabel), "Pausiert");
     updateControls();
@@ -403,11 +409,12 @@ void TrainingMetricsGui::stopTraining()
 {
     trainingActive = false;
     trainingStopped = true;
-    if (trainingSourceId != 0)
     {
-        g_source_remove(trainingSourceId);
-        trainingSourceId = 0;
+        std::lock_guard<std::mutex> lock(trainingMutex);
+        workerActive = false;
+        workerStopped = true;
     }
+    trainingCondition.notify_one();
     if (statusLabel != nullptr)
         gtk_label_set_text(GTK_LABEL(statusLabel), "Gestoppt");
     updateControls();
@@ -423,19 +430,11 @@ void TrainingMetricsGui::updateControls()
     gtk_widget_set_sensitive(stopButton, !trainingStopped && !trainingCompleted);
 }
 
-void TrainingMetricsGui::addMetrics(
+void TrainingMetricsGui::queueMetrics(
     size_t step,
     float trainingLoss,
     float testLoss,
-    float testAccuracy)
-{
-    steps.push_back(static_cast<double>(step));
-    trainingLosses.push_back(trainingLoss);
-    testLosses.push_back(testLoss);
-    testAccuracies.push_back(testAccuracy);
-}
-
-void TrainingMetricsGui::setDiagnostics(
+    float testAccuracy,
     const std::array<size_t, 10> &actualCounts,
     const std::array<size_t, 10> &predictedCounts,
     const std::array<size_t, 100> &confusionCounts,
@@ -443,16 +442,86 @@ void TrainingMetricsGui::setDiagnostics(
     const std::array<float, 10> &classRecall,
     float meanConfidence)
 {
-    this->actualCounts = actualCounts;
-    this->confusionCounts = confusionCounts;
-    this->normalizedConfusion = normalizedConfusion;
-    this->meanConfidence = meanConfidence;
-    hasDiagnostics = true;
-    for (size_t category = 0; category < this->predictedCounts.size(); ++category)
+    std::lock_guard<std::mutex> lock(trainingMutex);
+    pendingMetrics.push_back({
+        step,
+        trainingLoss,
+        testLoss,
+        testAccuracy,
+        actualCounts,
+        predictedCounts,
+        confusionCounts,
+        normalizedConfusion,
+        classRecall,
+        meanConfidence});
+}
+
+void TrainingMetricsGui::runTrainingWorker()
+{
+    while (true)
     {
-        this->predictedCounts[category] = static_cast<double>(predictedCounts[category]);
-        this->classRecall[category] = static_cast<double>(classRecall[category]);
+        {
+            std::unique_lock<std::mutex> lock(trainingMutex);
+            while (!workerActive && !workerStopped)
+                trainingCondition.wait(lock);
+            if (workerStopped)
+                break;
+        }
+
+        try
+        {
+            if (!trainingStepCallback(trainingStepUserData))
+            {
+                std::lock_guard<std::mutex> lock(trainingMutex);
+                workerActive = false;
+                workerStopped = true;
+            }
+        }
+        catch (...)
+        {
+            std::lock_guard<std::mutex> lock(trainingMutex);
+            trainingError = std::current_exception();
+            workerActive = false;
+            workerStopped = true;
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(trainingMutex);
+            if (workerStopped)
+                break;
+        }
     }
+    workerFinished.store(true, std::memory_order_release);
+}
+
+void TrainingMetricsGui::applyQueuedMetrics()
+{
+    std::vector<Metrics::TrainingMetricsSnapshot> metricsToApply;
+    {
+        std::lock_guard<std::mutex> lock(trainingMutex);
+        metricsToApply.swap(pendingMetrics);
+    }
+
+    for (const Metrics::TrainingMetricsSnapshot &metrics : metricsToApply)
+    {
+        steps.push_back(static_cast<double>(metrics.step));
+        trainingLosses.push_back(metrics.trainingLoss);
+        testLosses.push_back(metrics.testLoss);
+        testAccuracies.push_back(metrics.testAccuracy);
+        actualCounts = metrics.actualCounts;
+        confusionCounts = metrics.confusionCounts;
+        normalizedConfusion = metrics.normalizedConfusion;
+        meanConfidence = metrics.meanConfidence;
+        hasDiagnostics = true;
+        for (size_t category = 0; category < predictedCounts.size(); ++category)
+        {
+            predictedCounts[category] = static_cast<double>(metrics.predictedCounts[category]);
+            classRecall[category] = static_cast<double>(metrics.classRecall[category]);
+        }
+    }
+
+    if (!metricsToApply.empty())
+        render();
 }
 
 void TrainingMetricsGui::render()

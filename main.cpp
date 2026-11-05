@@ -1,5 +1,6 @@
 #include <VNN.h>
 #include <ImageLoading.h>
+#include "Metrics/Metrics.hpp"
 #include "MetricsCsvWriter.hpp"
 #include "TrainingMetricsGui.hpp"
 #include <memory>
@@ -14,7 +15,7 @@ int main()
     {
         constexpr size_t trainingCount = 40000;
         constexpr size_t requestedTestCount = 10000;
-        constexpr size_t TRAININGS_STEPS = 20000;
+        constexpr size_t TRAININGS_STEPS = 100;
         constexpr size_t EVALUATION_INTERVAL = 10;
 
         std::vector<float> labels = ImagePreProcessor::readLabelsAsFloat();
@@ -38,56 +39,30 @@ int main()
         MetricsCsvWriter metricsCsv("training_metrics.csv");
         gui.render();
 
-        size_t step = 0;
-        gui.setTrainingStepCallback([&]()
-                                    {
-            ++step;
-            const float trainingLoss = network.trainStep();
-            if (step % EVALUATION_INTERVAL == 0 || step == 1 || step == TRAININGS_STEPS)
+        constexpr size_t GRADIENT_CHECK_SAMPLE_COUNT = 16;
+        Metrics::TrainingState trainingState{
+            &network,
+            &evaluator,
+            &gui,
+            &metricsCsv,
+            testImages.get(),
+            testLabels.data(),
+            labels.data(),
+            TRAININGS_STEPS,
+            EVALUATION_INTERVAL};
+        trainingState.gradientCheckImages.resize(SIZE_INPUT_LAYER * GRADIENT_CHECK_SAMPLE_COUNT);
+        for (size_t feature = 0; feature < SIZE_INPUT_LAYER; ++feature)
+        {
+            for (size_t sample = 0; sample < GRADIENT_CHECK_SAMPLE_COUNT; ++sample)
             {
-                evaluator.copyParametersFrom(network);
-                const EvaluationMetrics metrics = evaluator.evaluate(testImages.get(), testLabels.data());
-                metricsCsv.writeMetrics(step, trainingLoss, metrics);
-                gui.addMetrics(step, trainingLoss, metrics.loss, metrics.accuracy);
-                gui.setDiagnostics(
-                    metrics.actualCounts,
-                    metrics.predictedCounts,
-                    metrics.confusionCounts,
-                    metrics.normalizedConfusion,
-                    metrics.classRecall,
-                    metrics.meanConfidence);
-                gui.render();
-                std::cout << "Schritt " << step
-                          << " | Trainings-Loss: " << trainingLoss
-                          << " | Test-Loss: " << metrics.loss
-                          << " | Testgenauigkeit: " << metrics.accuracy
-                          << " | Vorhersagen je Klasse:";
-                for (size_t category = 0; category < metrics.predictedCounts.size(); ++category)
-                    std::cout << ' ' << category << '=' << metrics.predictedCounts[category];
-                std::cout << '\n';
+                trainingState.gradientCheckImages[feature * GRADIENT_CHECK_SAMPLE_COUNT + sample] =
+                    images[feature * trainingCount + sample];
             }
-            return step < TRAININGS_STEPS; });
+        }
+        gui.setTrainingStepCallback(Metrics::trainingStepCallback, &trainingState);
         gui.run();
 
-            constexpr size_t gradientCheckSampleCount = 16;
-            std::vector<float> gradientCheckImages(SIZE_INPUT_LAYER * gradientCheckSampleCount);
-            for (size_t feature = 0; feature < SIZE_INPUT_LAYER; ++feature)
-            {
-                for (size_t sample = 0; sample < gradientCheckSampleCount; ++sample)
-                {
-                    gradientCheckImages[feature * gradientCheckSampleCount + sample] =
-                        images[feature * trainingCount + sample];
-                }
-            }
-            if (!network.runGradientCheck(
-                    gradientCheckImages.data(),
-                    labels.data(),
-                    gradientCheckSampleCount))
-            {
-                std::cerr << "Warnung: Gradiententest am Trainingsende ist fehlgeschlagen.\n";
-            }
-
-            return 0;
+        return 0;
     }
     catch (const std::exception &error)
     {
