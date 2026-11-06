@@ -6,6 +6,10 @@
 #include <string>
 
 struct EvaluationMetrics;
+namespace Metrics
+{
+struct ActivationDiagnostics;
+}
 
 class MetricsCsvWriter
 {
@@ -16,6 +20,11 @@ public:
     MetricsCsvWriter &operator=(const MetricsCsvWriter &) = delete;
 
     void writeMetrics(size_t step, float trainingLoss, const EvaluationMetrics &metrics);
+    void writeMetrics(
+        size_t step,
+        float trainingLoss,
+        const EvaluationMetrics &metrics,
+        const Metrics::ActivationDiagnostics &activationDiagnostics);
 
 private:
     void writeHeader();

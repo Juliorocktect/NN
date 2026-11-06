@@ -95,6 +95,37 @@ TEST(NNGEvaluationTest, RejectsMissingEvaluationInputs)
     EXPECT_THROW(network.evaluate(label.data(), nullptr), std::invalid_argument);
 }
 
+TEST(NNGEvaluationTest, CopiesHiddenLayerActivationsAfterEvaluation)
+{
+    NNG network(sampleCount);
+    const std::vector<float> labels{0.0f, 1.0f, 2.0f, 3.0f};
+    const std::vector<float> images(SIZE_INPUT_LAYER * sampleCount, 0.0f);
+    network.evaluate(images.data(), labels.data());
+
+    std::array<GVector, 3> activations;
+    network.copyHiddenLayerActivations(activations);
+
+    const std::array<size_t, 3> layerSizes{
+        SIZE_FIRST_LAYER, SIZE_SECOND_LAYER, SIZE_THIRD_LAYER};
+    for (size_t layer = 0; layer < activations.size(); ++layer)
+    {
+        ASSERT_EQ(activations[layer].getSize(), layerSizes[layer] * sampleCount);
+        std::vector<float> hostActivations(activations[layer].getSize());
+        ASSERT_EQ(cudaMemcpy(
+                      hostActivations.data(),
+                      activations[layer].getVector(),
+                      hostActivations.size() * sizeof(float),
+                      cudaMemcpyDeviceToHost),
+                  cudaSuccess);
+        for (float activation : hostActivations)
+        {
+            EXPECT_TRUE(std::isfinite(activation));
+            EXPECT_GE(activation, 0.0f);
+            EXPECT_LE(activation, 1.0f);
+        }
+    }
+}
+
 TEST(NNGGradientCheckTest, MatchesAnalyticalGradientsAgainstFiniteDifferences)
 {
     constexpr size_t count = 4;

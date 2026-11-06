@@ -137,6 +137,27 @@ void NNG::copyParametersFrom(const NNG &source)
     b4 = source.b4;
 }
 
+void NNG::copyHiddenLayerActivations(std::array<GVector, 3> &activations)
+{
+    const std::array<GMatrix *, 3> layerActivations{&A1, &A2, &A3};
+    for (size_t layer = 0; layer < layerActivations.size(); ++layer)
+    {
+        GMatrix *activation = layerActivations[layer];
+        const size_t valueCount = activation->getRows() * activation->getCols();
+        activations[layer].setSize(valueCount);
+        if (valueCount == 0)
+            continue;
+
+        const cudaError_t error = cudaMemcpy(
+            activations[layer].getVector(),
+            activation->getMatrix(),
+            valueCount * sizeof(float),
+            cudaMemcpyDeviceToDevice);
+        if (error != cudaSuccess)
+            throw std::runtime_error(cudaGetErrorString(error));
+    }
+}
+
 double NNG::calculateGradientCheckLoss(const float *hostLabels, size_t sampleCount)
 {
     forwardProp();

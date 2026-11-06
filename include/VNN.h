@@ -105,6 +105,7 @@ public:
     float calcAccuracy(float *testData, float *testLabels, size_t sizeTestData);
     float trainStep();
     void copyParametersFrom(const NNG &source);
+    void copyHiddenLayerActivations(std::array<GVector, 3> &activations);
     bool runGradientCheck(
         const float *inputData,
         const float *labels,

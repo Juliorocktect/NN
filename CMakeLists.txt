@@ -102,5 +102,6 @@ target_link_libraries(nn_tests PRIVATE
     GTest::gtest_main
     MATHS
     vnn_lib
+    training_gui
     /usr/lib/gcc/x86_64-linux-gnu/15/libstdc++.a
 )
