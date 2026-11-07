@@ -92,7 +92,27 @@ public:
     void initilizeYMatrix(float *pLabels);
     float sumCrossEntropyLoss();
     float trainStep();
+    /**
+     * @brief Runs forward propagation and returns a class prediction and confidence per sample.
+     *
+     * The input batch size is determined by the network's configured training-data size.
+     *
+     * @param data Input data in feature-major, sample-minor layout.
+     * @return Predicted class labels and their probabilities for each sample.
+     * @throws std::invalid_argument If the network batch size is zero or data is null.
+     * @throws std::length_error If the batch exceeds the CUDA argmax launcher's limits.
+     * @throws std::runtime_error If a CUDA operation fails.
+     */
     PredictionBatch predict(const float *data);
+    /**
+     * @brief Calculates mean cross-entropy loss for the most recent forward pass.
+     *
+     * @param hostLabels Host-side class labels corresponding to that forward pass.
+     * @return Mean cross-entropy loss.
+     * @throws std::invalid_argument If the network batch size is zero or labels is null.
+     * @throws std::length_error If the batch exceeds the CUDA loss launcher's limits.
+     * @throws std::runtime_error If a CUDA operation fails.
+     */
     float calculateEvaluationLoss(const float *hostLabels);
     void copyParametersFrom(const NNG &source);
     void copyHiddenLayerActivations(std::array<GVector, 3> &activations);

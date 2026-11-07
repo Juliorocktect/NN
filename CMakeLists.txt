@@ -80,6 +80,7 @@ set_target_properties(nn_tests PROPERTIES
 
 target_link_libraries(MATHS PUBLIC CUDA::cudart)
 #target_link_libraries(test PRIVATE CUDA::cudart)
+
 # Link die Bibliothek mit dem Executable
 target_link_libraries(main_exec PRIVATE MATHS training_management)
 target_link_libraries(vnn_lib PRIVATE MATHS)
@@ -87,6 +88,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTK4 REQUIRED IMPORTED_TARGET gtk4)
 target_link_libraries(vnn_lib PRIVATE PkgConfig::GTK4)
 
+# Der GUI GTK4 geben
 add_library(training_gui src/gui/TrainingMetricsGui.cpp)
 target_include_directories(training_gui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(training_gui PUBLIC PkgConfig::GTK4)
@@ -110,6 +112,7 @@ target_link_libraries(training_management
 include(GoogleTest)
 gtest_discover_tests(nn_tests)
 
+# problem mit dem compiler
 target_link_libraries(nn_tests PRIVATE
     GTest::gtest
     GTest::gtest_main
