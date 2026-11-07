@@ -18,6 +18,7 @@ struct TrainingController::TrainingState
 {
     NNG *network;
     NNG *evaluator;
+    NNG *predictionNetwork;
     const TrainingDataset *dataset;
     const TrainingConfig *config;
     TrainingMetricsGui *gui;
@@ -170,6 +171,7 @@ bool TrainingController::runTrainingStep(void *userData)
 
     if (state->step == state->config->trainingSteps)
     {
+        state->predictionNetwork->copyParametersFrom(*state->network);
         const bool passed = state->network->runGradientCheck(
             state->gradientCheckImages.get(),
             state->dataset->trainingLabels.data(),
@@ -184,6 +186,29 @@ bool TrainingController::runTrainingStep(void *userData)
     }
 
     return true;
+}
+
+void TrainingController::predictImage(
+    void *userData,
+    const float *image,
+    size_t &predictedClass,
+    float &confidence)
+{
+    if (userData == nullptr || image == nullptr)
+    {
+        throw std::invalid_argument("Image prediction requires a network and image data");
+    }
+
+    NNG *predictionNetwork = static_cast<NNG *>(userData);
+    const PredictionBatch prediction = predictionNetwork->predict(image);
+    if (prediction.predictedClasses.size() != 1 ||
+        prediction.confidenceValues.size() != 1)
+    {
+        throw std::runtime_error("Single-image prediction returned an invalid result");
+    }
+
+    predictedClass = prediction.predictedClasses[0];
+    confidence = prediction.confidenceValues[0];
 }
 
 /**
@@ -222,6 +247,7 @@ void TrainingController::run(
     network.setInputData(dataset.trainingImages.get());
 
     NNG evaluator(dataset.testCount);
+    NNG predictionNetwork(1);
     TrainingMetricsGui gui;
     gui.setImageData(
         dataset.trainingImages.get(),
@@ -235,6 +261,7 @@ void TrainingController::run(
     TrainingState state{
         &network,
         &evaluator,
+        &predictionNetwork,
         &dataset,
         &config,
         &gui,
@@ -257,5 +284,6 @@ void TrainingController::run(
     }
 
     gui.setTrainingStepCallback(TrainingController::runTrainingStep, &state);
+    gui.setImagePredictionCallback(TrainingController::predictImage, &predictionNetwork);
     gui.run();
 }

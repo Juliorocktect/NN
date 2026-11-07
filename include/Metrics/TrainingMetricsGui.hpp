@@ -19,6 +19,14 @@ class TrainingMetricsGui
 {
 public:
     using TrainingStepCallback = bool (*)(void *);
+    /**
+     * @brief Receives a normalized single-image input and returns its predicted class and confidence.
+     */
+    using ImagePredictionCallback = void (*)(
+        void *,
+        const float *,
+        size_t &,
+        float &);
 
     TrainingMetricsGui();
     ~TrainingMetricsGui();
@@ -27,6 +35,16 @@ public:
     TrainingMetricsGui &operator=(const TrainingMetricsGui &) = delete;
 
     void setTrainingStepCallback(TrainingStepCallback callback, void *userData);
+    /**
+     * @brief Registers the inference callback used to classify uploaded PNG images.
+     *
+     * The callback is enabled in the GUI only after training completes successfully.
+     *
+     * @param callback Function that predicts one image.
+     * @param userData Context passed to the callback.
+     * @throws std::invalid_argument If the callback is null.
+     */
+    void setImagePredictionCallback(ImagePredictionCallback callback, void *userData);
     void setImageData(
         const float *images,
         const float *labels,
@@ -45,6 +63,10 @@ private:
     static void onPauseClicked(GtkButton *button, gpointer userData);
     static void onStopClicked(GtkButton *button, gpointer userData);
     static void onImageLookupClicked(GtkButton *button, gpointer userData);
+    /** @brief Opens the PNG chooser when the user requests image classification. */
+    static void onPngPredictionClicked(GtkButton *button, gpointer userData);
+    /** @brief Handles the PNG chooser response and forwards an accepted file for classification. */
+    static void onPngFileSelected(GtkNativeDialog *dialog, int response, gpointer userData);
     static gboolean onUiUpdate(gpointer userData);
     static void drawCallback(
         GtkDrawingArea *area,
@@ -61,6 +83,10 @@ private:
     void draw(cairo_t *context, int width, int height) const;
     void drawImagePreview(cairo_t *context, int width, int height) const;
     void showSelectedImage();
+    /** @brief Opens the PNG-only file chooser after successful training. */
+    void openPngFileChooser();
+    /** @brief Converts a selected PNG to a normalized 28-by-28 input and displays its prediction. */
+    void classifyPngFile(const char *filePath);
     void runTrainingWorker();
     void applyQueuedMetrics();
     void startTraining();
@@ -77,12 +103,15 @@ private:
     GtkWidget *imageIndexEntry = nullptr;
     GtkWidget *imageLookupStatus = nullptr;
     GtkWidget *imagePreviewArea = nullptr;
+    GtkWidget *pngPredictionButton = nullptr;
+    GtkWidget *pngPredictionStatus = nullptr;
     GMainLoop *mainLoop = nullptr;
     guint uiUpdateSourceId = 0;
     bool trainingStarted = false;
     bool trainingActive = false;
     bool trainingStopped = false;
     bool trainingCompleted = false;
+    GtkNativeDialog *pngFileChooser = nullptr;
     const float *imageData = nullptr;
     const float *imageLabels = nullptr;
     size_t imageCount = 0;
@@ -92,6 +121,8 @@ private:
     bool hasSelectedImage = false;
     TrainingStepCallback trainingStepCallback = nullptr;
     void *trainingStepUserData = nullptr;
+    ImagePredictionCallback imagePredictionCallback = nullptr;
+    void *imagePredictionUserData = nullptr;
     std::exception_ptr trainingError;
     std::thread trainingThread;
     std::mutex trainingMutex;

@@ -86,12 +86,13 @@ target_link_libraries(main_exec PRIVATE MATHS training_management)
 target_link_libraries(vnn_lib PRIVATE MATHS)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTK4 REQUIRED IMPORTED_TARGET gtk4)
+pkg_check_modules(GDK_PIXBUF REQUIRED IMPORTED_TARGET gdk-pixbuf-2.0)
 target_link_libraries(vnn_lib PRIVATE PkgConfig::GTK4)
 
 # Der GUI GTK4 geben
 add_library(training_gui src/gui/TrainingMetricsGui.cpp)
 target_include_directories(training_gui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(training_gui PUBLIC PkgConfig::GTK4)
+target_link_libraries(training_gui PUBLIC PkgConfig::GTK4 PkgConfig::GDK_PIXBUF)
 
 add_library(evaluation_service src/utils/Metrics/EvaluationService.cpp)
 target_include_directories(evaluation_service PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

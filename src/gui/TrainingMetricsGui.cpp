@@ -1,17 +1,34 @@
 #include "TrainingMetricsGui.hpp"
 
+#include <gdk-pixbuf/gdk-pixbuf.h>
+
 #include <algorithm>
 #include <cerrno>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <limits>
+#include <memory>
 #include <stdexcept>
+#include <string>
 
 namespace
 {
 constexpr double margin = 48.0;
 constexpr double titleHeight = 28.0;
+constexpr size_t PNG_IMAGE_WIDTH = 28;
+constexpr size_t PNG_IMAGE_HEIGHT = 28;
+
+struct PixbufDeleter
+{
+    void operator()(GdkPixbuf *pixbuf) const
+    {
+        if (pixbuf != nullptr)
+        {
+            g_object_unref(pixbuf);
+        }
+    }
+};
 
 void setColor(cairo_t *context, double red, double green, double blue, double alpha = 1.0)
 {
@@ -372,6 +389,24 @@ TrainingMetricsGui::TrainingMetricsGui()
     gtk_box_append(GTK_BOX(imageControls), imagePreviewArea);
     gtk_box_append(GTK_BOX(root), imageControls);
 
+    GtkWidget *pngPredictionControls = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    gtk_widget_set_margin_start(pngPredictionControls, 12);
+    gtk_widget_set_margin_end(pngPredictionControls, 12);
+    gtk_widget_set_margin_bottom(pngPredictionControls, 8);
+    pngPredictionButton = gtk_button_new_with_label("PNG laden und erkennen");
+    pngPredictionStatus = gtk_label_new(
+        "Nach dem Training ein PNG zur Ziffernerkennung auswaehlen.");
+    gtk_label_set_xalign(GTK_LABEL(pngPredictionStatus), 0.0f);
+    gtk_widget_set_hexpand(pngPredictionStatus, TRUE);
+    g_signal_connect(
+        pngPredictionButton,
+        "clicked",
+        G_CALLBACK(onPngPredictionClicked),
+        this);
+    gtk_box_append(GTK_BOX(pngPredictionControls), pngPredictionButton);
+    gtk_box_append(GTK_BOX(pngPredictionControls), pngPredictionStatus);
+    gtk_box_append(GTK_BOX(root), pngPredictionControls);
+
     GtkWidget *scrolledWindow = gtk_scrolled_window_new();
     drawingArea = gtk_drawing_area_new();
     gtk_drawing_area_set_content_width(GTK_DRAWING_AREA(drawingArea), 1040);
@@ -388,6 +423,12 @@ TrainingMetricsGui::TrainingMetricsGui()
 
 TrainingMetricsGui::~TrainingMetricsGui()
 {
+    if (pngFileChooser != nullptr)
+    {
+        gtk_native_dialog_hide(pngFileChooser);
+        g_object_unref(pngFileChooser);
+        pngFileChooser = nullptr;
+    }
     stopTraining();
     if (trainingThread.joinable())
         trainingThread.join();
@@ -428,6 +469,43 @@ void TrainingMetricsGui::onStopClicked(GtkButton *, gpointer userData)
 void TrainingMetricsGui::onImageLookupClicked(GtkButton *, gpointer userData)
 {
     static_cast<TrainingMetricsGui *>(userData)->showSelectedImage();
+}
+
+void TrainingMetricsGui::onPngPredictionClicked(GtkButton *, gpointer userData)
+{
+    static_cast<TrainingMetricsGui *>(userData)->openPngFileChooser();
+}
+
+void TrainingMetricsGui::onPngFileSelected(
+    GtkNativeDialog *dialog,
+    int response,
+    gpointer userData)
+{
+    TrainingMetricsGui *gui = static_cast<TrainingMetricsGui *>(userData);
+    gui->pngFileChooser = nullptr;
+
+    if (response == GTK_RESPONSE_ACCEPT)
+    {
+        GFile *file = gtk_file_chooser_get_file(GTK_FILE_CHOOSER(dialog));
+        if (file != nullptr)
+        {
+            char *filePath = g_file_get_path(file);
+            if (filePath != nullptr)
+            {
+                gui->classifyPngFile(filePath);
+                g_free(filePath);
+            }
+            else
+            {
+                gtk_label_set_text(
+                    GTK_LABEL(gui->pngPredictionStatus),
+                    "Der ausgewaehlte PNG-Pfad ist nicht lesbar.");
+            }
+            g_object_unref(file);
+        }
+    }
+
+    g_object_unref(dialog);
 }
 
 gboolean TrainingMetricsGui::onUiUpdate(gpointer userData)
@@ -487,6 +565,22 @@ void TrainingMetricsGui::setTrainingStepCallback(TrainingStepCallback callback, 
         throw std::invalid_argument("Training step callback must not be empty");
     trainingStepCallback = callback;
     trainingStepUserData = userData;
+}
+
+void TrainingMetricsGui::setImagePredictionCallback(
+    ImagePredictionCallback callback,
+    void *userData)
+{
+    if (callback == nullptr)
+    {
+        throw std::invalid_argument("Image prediction callback must not be empty");
+    }
+    imagePredictionCallback = callback;
+    imagePredictionUserData = userData;
+    if (pngPredictionButton != nullptr)
+    {
+        gtk_widget_set_sensitive(pngPredictionButton, trainingCompleted);
+    }
 }
 
 void TrainingMetricsGui::setImageData(
@@ -623,6 +717,172 @@ void TrainingMetricsGui::showSelectedImage()
     gtk_widget_queue_draw(imagePreviewArea);
 }
 
+void TrainingMetricsGui::openPngFileChooser()
+{
+    if (!trainingCompleted || imagePredictionCallback == nullptr)
+    {
+        gtk_label_set_text(
+            GTK_LABEL(pngPredictionStatus),
+            "Die Ziffernerkennung ist erst nach abgeschlossenem Training verfuegbar.");
+        return;
+    }
+
+    if (pngFileChooser != nullptr)
+    {
+        gtk_native_dialog_show(pngFileChooser);
+        return;
+    }
+
+    GtkFileChooserNative *fileChooser = gtk_file_chooser_native_new(
+        "PNG-Bild zur Ziffernerkennung auswaehlen",
+        window,
+        GTK_FILE_CHOOSER_ACTION_OPEN,
+        "Auswaehlen",
+        "Abbrechen");
+    if (fileChooser == nullptr)
+    {
+        gtk_label_set_text(
+            GTK_LABEL(pngPredictionStatus),
+            "Der Dateiauswahldialog konnte nicht geoeffnet werden.");
+        return;
+    }
+
+    GtkFileFilter *pngFilter = gtk_file_filter_new();
+    gtk_file_filter_set_name(pngFilter, "PNG-Bilder");
+    gtk_file_filter_add_mime_type(pngFilter, "image/png");
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(fileChooser), pngFilter);
+
+    pngFileChooser = GTK_NATIVE_DIALOG(fileChooser);
+    g_signal_connect(
+        pngFileChooser,
+        "response",
+        G_CALLBACK(onPngFileSelected),
+        this);
+    gtk_native_dialog_show(pngFileChooser);
+}
+
+void TrainingMetricsGui::classifyPngFile(const char *filePath)
+{
+    GError *loadError = nullptr;
+    std::unique_ptr<GdkPixbuf, PixbufDeleter> sourcePixbuf(
+        gdk_pixbuf_new_from_file(filePath, &loadError));
+    if (sourcePixbuf == nullptr)
+    {
+        const char *errorMessage = "PNG-Bild konnte nicht geladen werden.";
+        if (loadError != nullptr && loadError->message != nullptr)
+        {
+            errorMessage = loadError->message;
+        }
+        gtk_label_set_text(GTK_LABEL(pngPredictionStatus), errorMessage);
+        g_clear_error(&loadError);
+        return;
+    }
+
+    std::unique_ptr<GdkPixbuf, PixbufDeleter> scaledPixbuf(
+        gdk_pixbuf_scale_simple(
+            sourcePixbuf.get(),
+            static_cast<int>(PNG_IMAGE_WIDTH),
+            static_cast<int>(PNG_IMAGE_HEIGHT),
+            GDK_INTERP_BILINEAR));
+    if (scaledPixbuf == nullptr)
+    {
+        gtk_label_set_text(
+            GTK_LABEL(pngPredictionStatus),
+            "Das PNG-Bild konnte nicht auf 28x28 Pixel skaliert werden.");
+        return;
+    }
+
+    const int channelCount = gdk_pixbuf_get_n_channels(scaledPixbuf.get());
+    const int rowStride = gdk_pixbuf_get_rowstride(scaledPixbuf.get());
+    const guchar *pixelData = gdk_pixbuf_read_pixels(scaledPixbuf.get());
+    if (pixelData == nullptr || (channelCount != 3 && channelCount != 4))
+    {
+        gtk_label_set_text(
+            GTK_LABEL(pngPredictionStatus),
+            "Das PNG-Bild hat ein nicht unterstuetztes Pixelformat.");
+        return;
+    }
+
+    std::array<float, PNG_IMAGE_WIDTH * PNG_IMAGE_HEIGHT> imageData{};
+    for (size_t y = 0; y < PNG_IMAGE_HEIGHT; ++y)
+    {
+        for (size_t x = 0; x < PNG_IMAGE_WIDTH; ++x)
+        {
+            const size_t pixelOffset =
+                y * static_cast<size_t>(rowStride) +
+                x * static_cast<size_t>(channelCount);
+            const guchar *pixel = pixelData + pixelOffset;
+            float brightness =
+                (0.299f * pixel[0] + 0.587f * pixel[1] + 0.114f * pixel[2]) / 255.0f;
+            if (channelCount == 4)
+            {
+                brightness *= static_cast<float>(pixel[3]) / 255.0f;
+            }
+            imageData[y * PNG_IMAGE_WIDTH + x] = brightness;
+        }
+    }
+
+    float borderBrightness = 0.0f;
+    for (size_t x = 0; x < PNG_IMAGE_WIDTH; ++x)
+    {
+        borderBrightness += imageData[x];
+        borderBrightness += imageData[(PNG_IMAGE_HEIGHT - 1) * PNG_IMAGE_WIDTH + x];
+    }
+    for (size_t y = 1; y + 1 < PNG_IMAGE_HEIGHT; ++y)
+    {
+        borderBrightness += imageData[y * PNG_IMAGE_WIDTH];
+        borderBrightness += imageData[y * PNG_IMAGE_WIDTH + PNG_IMAGE_WIDTH - 1];
+    }
+    const size_t BORDER_PIXEL_COUNT =
+        PNG_IMAGE_WIDTH * 2 + (PNG_IMAGE_HEIGHT - 2) * 2;
+    // MNIST expects bright strokes on a dark background.
+    const bool invertBrightness =
+        borderBrightness / static_cast<float>(BORDER_PIXEL_COUNT) > 0.5f;
+    if (invertBrightness)
+    {
+        for (size_t pixel = 0; pixel < imageData.size(); ++pixel)
+        {
+            imageData[pixel] = 1.0f - imageData[pixel];
+        }
+    }
+
+    size_t predictedClass = 0;
+    float confidence = 0.0f;
+    try
+    {
+        imagePredictionCallback(
+            imagePredictionUserData,
+            imageData.data(),
+            predictedClass,
+            confidence);
+    }
+    catch (const std::exception &error)
+    {
+        const std::string errorMessage =
+            std::string("Vorhersage fehlgeschlagen: ") + error.what();
+        gtk_label_set_text(GTK_LABEL(pngPredictionStatus), errorMessage.c_str());
+        return;
+    }
+
+    if (predictedClass > 9 || !std::isfinite(confidence) ||
+        confidence < 0.0f || confidence > 1.0f)
+    {
+        gtk_label_set_text(
+            GTK_LABEL(pngPredictionStatus),
+            "Das Modell hat ein ungueltiges Vorhersageergebnis geliefert.");
+        return;
+    }
+
+    char resultText[160];
+    std::snprintf(
+        resultText,
+        sizeof(resultText),
+        "Erkannte Ziffer: %zu (Sicherheit: %.1f%%)",
+        predictedClass,
+        static_cast<double>(confidence) * 100.0);
+    gtk_label_set_text(GTK_LABEL(pngPredictionStatus), resultText);
+}
+
 void TrainingMetricsGui::imagePreviewDrawCallback(
     GtkDrawingArea *,
     cairo_t *context,
@@ -695,6 +955,12 @@ void TrainingMetricsGui::updateControls()
     gtk_widget_set_sensitive(startButton, !trainingActive && !trainingStopped && !trainingCompleted);
     gtk_widget_set_sensitive(pauseButton, trainingActive);
     gtk_widget_set_sensitive(stopButton, !trainingStopped && !trainingCompleted);
+    if (pngPredictionButton != nullptr)
+    {
+        gtk_widget_set_sensitive(
+            pngPredictionButton,
+            trainingCompleted && imagePredictionCallback != nullptr);
+    }
 }
 
 void TrainingMetricsGui::queueMetrics(const Metrics::TrainingMetricsSnapshot &metrics)

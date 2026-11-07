@@ -31,6 +31,20 @@ private:
      * @return true to continue training, or false when the configured final step completes.
      */
     static bool runTrainingStep(void *userData);
+
+    /**
+     * @brief Predicts the digit represented by a single 28-by-28 image.
+     *
+     * @param userData Pointer to the single-image prediction network.
+     * @param image Input pixels normalized to the range [0, 1].
+     * @param predictedClass Receives the predicted digit.
+     * @param confidence Receives the predicted class probability.
+     */
+    static void predictImage(
+        void *userData,
+        const float *image,
+        size_t &predictedClass,
+        float &confidence);
 };
 
 #endif
