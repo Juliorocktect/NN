@@ -11,6 +11,7 @@
 #include <condition_variable>
 #include <exception>
 #include <mutex>
+#include <optional>
 #include <thread>
 #include <vector>
 
@@ -35,6 +36,7 @@ public:
     void run();
     void rethrowTrainingError() const;
     void queueMetrics(const Metrics::TrainingMetricsSnapshot &metrics);
+    void queueFinalTestAccuracy(float accuracy);
     void render();
 
 private:
@@ -98,6 +100,8 @@ private:
     bool workerStopped = false;
     std::atomic<bool> workerFinished{false};
     std::vector<Metrics::TrainingMetricsSnapshot> pendingMetrics;
+    std::optional<float> pendingFinalTestAccuracy;
+    std::optional<float> finalTestAccuracy;
     std::vector<Metrics::ActivationHistoryEntry> activationHistory;
     std::vector<double> steps;
     std::vector<double> trainingLosses;

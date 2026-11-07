@@ -450,7 +450,20 @@ gboolean TrainingMetricsGui::onUiUpdate(gpointer userData)
         {
             gui->trainingActive = false;
             gui->trainingCompleted = true;
-            gtk_label_set_text(GTK_LABEL(gui->statusLabel), "Abgeschlossen");
+            if (gui->finalTestAccuracy.has_value())
+            {
+                char completionText[80];
+                std::snprintf(
+                    completionText,
+                    sizeof(completionText),
+                    "Abgeschlossen | Testgenauigkeit: %.2f%%",
+                    static_cast<double>(gui->finalTestAccuracy.value()) * 100.0);
+                gtk_label_set_text(GTK_LABEL(gui->statusLabel), completionText);
+            }
+            else
+            {
+                gtk_label_set_text(GTK_LABEL(gui->statusLabel), "Abgeschlossen");
+            }
             gui->updateControls();
         }
     }
@@ -690,6 +703,15 @@ void TrainingMetricsGui::queueMetrics(const Metrics::TrainingMetricsSnapshot &me
     pendingMetrics.push_back(metrics);
 }
 
+void TrainingMetricsGui::queueFinalTestAccuracy(float accuracy)
+{
+    if (!std::isfinite(accuracy) || accuracy < 0.0f || accuracy > 1.0f)
+        throw std::invalid_argument("Final test accuracy must be between 0 and 1");
+
+    std::lock_guard<std::mutex> lock(trainingMutex);
+    pendingFinalTestAccuracy = accuracy;
+}
+
 void TrainingMetricsGui::runTrainingWorker()
 {
     while (true)
@@ -731,10 +753,15 @@ void TrainingMetricsGui::runTrainingWorker()
 void TrainingMetricsGui::applyQueuedMetrics()
 {
     std::vector<Metrics::TrainingMetricsSnapshot> metricsToApply;
+    std::optional<float> finalAccuracyToApply;
     {
         std::lock_guard<std::mutex> lock(trainingMutex);
         metricsToApply.swap(pendingMetrics);
+        finalAccuracyToApply.swap(pendingFinalTestAccuracy);
     }
+
+    if (finalAccuracyToApply.has_value())
+        finalTestAccuracy = finalAccuracyToApply;
 
     for (const Metrics::TrainingMetricsSnapshot &metrics : metricsToApply)
     {

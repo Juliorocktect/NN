@@ -5,6 +5,7 @@
 #include <cmath>
 #include <inttypes.h>
 #include <array>
+#include <vector>
 #include <Maths.h>
 #include "GMatrix.hpp"
 #include "GVector.hpp"
@@ -12,7 +13,7 @@
 #define SIZE_FIRST_LAYER 480
 #define SIZE_SECOND_LAYER 200
 #define SIZE_THIRD_LAYER 180
-#define LEARNING_RATE 0.001
+#define LEARNING_RATE 0.01
 
 double sigmoid(double x);
 
@@ -82,6 +83,22 @@ private:
         size_t sampleCount,
         float epsilon,
         float tolerance);
+    float calculateEvaluationLoss(
+        GVector &deviceLabels,
+        size_t sampleCount);
+    void calculateClassCounts(
+        const std::vector<float> &labels,
+        const std::vector<float> &predictedLabels,
+        EvaluationMetrics &metrics) const;
+    float calculateEvaluationAccuracy(
+        const std::array<size_t, 100> &confusionCounts,
+        size_t sampleCount) const;
+    float calculateMeanConfidence(
+        const std::vector<float> &predictions,
+        const std::vector<float> &predictedLabels,
+        size_t sampleCount) const;
+    void calculateNormalizedConfusion(EvaluationMetrics &metrics) const;
+    void calculateClassRecall(EvaluationMetrics &metrics) const;
 
 public:
     NNG();
@@ -114,5 +131,8 @@ public:
         float tolerance = 5e-2f) const;
     EvaluationMetrics evaluate(const float *testData, const float *testLabels);
     void run(size_t times);
+    void train(size_t times);
 };
+
+
 #endif
