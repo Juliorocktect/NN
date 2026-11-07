@@ -19,7 +19,7 @@ find_package(CUDAToolkit REQUIRED)
 include_directories(include)
 include_directories(include/Metrics/)
 #get test files
-file(GLOB TEST_FILES
+file(GLOB TEST_FILES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cu"
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp"
 )
@@ -109,9 +109,6 @@ target_link_libraries(training_management
     PUBLIC vnn_lib training_gui evaluation_service metrics_service
 )
 
-include(GoogleTest)
-gtest_discover_tests(nn_tests)
-
 # problem mit dem compiler
 target_link_libraries(nn_tests PRIVATE
     GTest::gtest
@@ -124,3 +121,6 @@ target_link_libraries(nn_tests PRIVATE
     training_management
     /usr/lib/gcc/x86_64-linux-gnu/15/libstdc++.a
 )
+
+include(GoogleTest)
+gtest_discover_tests(nn_tests)
