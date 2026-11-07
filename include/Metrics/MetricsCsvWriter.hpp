@@ -5,7 +5,7 @@
 #include <fstream>
 #include <string>
 
-struct EvaluationMetrics;
+#include "Metrics/EvaluationMetrics.hpp"
 namespace Metrics
 {
 struct ActivationDiagnostics;

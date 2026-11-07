@@ -1,7 +1,6 @@
 #include "MetricsCsvWriter.hpp"
 
 #include "Metrics/Metrics.hpp"
-#include "VNN.h"
 
 #include <iomanip>
 #include <limits>

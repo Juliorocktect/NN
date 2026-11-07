@@ -345,122 +345,22 @@ bool NNG::runGradientCheck(
     return passed;
 }
 
-float NNG::calculateEvaluationLoss(
-    GVector &deviceLabels,
-    size_t sampleCount)
+PredictionBatch NNG::predict(const float *data)
 {
-    return CudaLaunchers::sumCrossEntropyLoss(
-        y_hat.getMatrix(),
-        deviceLabels.getVector(),
-        static_cast<int>(sampleCount));
-}
-
-void NNG::calculateClassCounts(
-    const std::vector<float> &hostLabels,
-    const std::vector<float> &predictedLabels,
-    EvaluationMetrics &metrics) const
-{
-    for (size_t sample = 0; sample < hostLabels.size(); ++sample)
+    if (SIZE_TRAINING_DATA == 0 || data == nullptr)
     {
-        const size_t actualLabel = static_cast<size_t>(hostLabels[sample]);
-        const size_t predictedLabel = static_cast<size_t>(predictedLabels[sample]);
-        ++metrics.actualCounts[actualLabel];
-        ++metrics.predictedCounts[predictedLabel];
-        ++metrics.confusionCounts[actualLabel * metrics.predictedCounts.size() + predictedLabel];
+        throw std::invalid_argument("Prediction requires a non-empty input batch");
     }
-}
-
-float NNG::calculateEvaluationAccuracy(
-    const std::array<size_t, 100> &confusionCounts,
-    size_t sampleCount) const
-{
-    size_t correctCount = 0;
-    for (size_t category = 0; category < 10; ++category)
-    {
-        correctCount += confusionCounts[category * 10 + category];
-    }
-    return static_cast<float>(correctCount) / static_cast<float>(sampleCount);
-}
-
-float NNG::calculateMeanConfidence(
-    const std::vector<float> &predictions,
-    const std::vector<float> &predictedLabels,
-    size_t sampleCount) const
-{
-    float totalConfidence = 0.0f;
-    for (size_t sample = 0; sample < sampleCount; ++sample)
-    {
-        const size_t predictedLabel = static_cast<size_t>(predictedLabels[sample]);
-        totalConfidence += predictions[predictedLabel * sampleCount + sample];
-    }
-    return totalConfidence / static_cast<float>(sampleCount);
-}
-
-void NNG::calculateNormalizedConfusion(EvaluationMetrics &metrics) const
-{
-    for (size_t actual = 0; actual < metrics.actualCounts.size(); ++actual)
-    {
-        if (metrics.actualCounts[actual] == 0)
-        {
-            continue;
-        }
-
-        for (size_t predicted = 0; predicted < metrics.predictedCounts.size(); ++predicted)
-        {
-            const size_t index = actual * metrics.predictedCounts.size() + predicted;
-            metrics.normalizedConfusion[index] =
-                static_cast<double>(metrics.confusionCounts[index]) /
-                static_cast<double>(metrics.actualCounts[actual]);
-        }
-    }
-}
-
-void NNG::calculateClassRecall(EvaluationMetrics &metrics) const
-{
-    for (size_t category = 0; category < metrics.actualCounts.size(); ++category)
-    {
-        if (metrics.actualCounts[category] == 0)
-        {
-            continue;
-        }
-
-        const size_t correctCount =
-            metrics.confusionCounts[category * metrics.predictedCounts.size() + category];
-        metrics.classRecall[category] =
-            static_cast<float>(correctCount) / static_cast<float>(metrics.actualCounts[category]);
-    }
-}
-
-EvaluationMetrics NNG::evaluate(const float *testData, const float *testLabels)
-{
-    if (SIZE_TRAINING_DATA == 0 || testData == nullptr || testLabels == nullptr)
-        throw std::invalid_argument("Evaluation requires test data and labels");
 
     const size_t sampleCount = SIZE_TRAINING_DATA;
     if (sampleCount > static_cast<size_t>(std::numeric_limits<int>::max()))
-        throw std::length_error("Evaluation sample count exceeds CUDA launcher limits");
-
-    std::vector<float> hostLabels(testLabels, testLabels + sampleCount);
-    for (size_t sample = 0; sample < hostLabels.size(); ++sample)
     {
-        const float labelValue = hostLabels[sample];
-        if (!std::isfinite(labelValue))
-        {
-            throw std::invalid_argument("Test labels must be finite integers from 0 to 9");
-        }
-
-        const int label = static_cast<int>(labelValue);
-        if (label < 0 || label >= 10 || labelValue != label)
-        {
-            throw std::invalid_argument("Test labels must be integers from 0 to 9");
-        }
+        throw std::length_error("Prediction sample count exceeds CUDA launcher limits");
     }
 
-    setInputData(testData);
+    setInputData(data);
     forwardProp();
 
-    GVector deviceLabels(sampleCount);
-    deviceLabels.upload(hostLabels.data());
     GVector devicePredictions(sampleCount);
     CudaLaunchers::argmax(
         y_hat.getMatrix(),
@@ -468,37 +368,55 @@ EvaluationMetrics NNG::evaluate(const float *testData, const float *testLabels)
         static_cast<int>(sampleCount),
         devicePredictions.getVector());
 
-    std::vector<float> predictions(10 * sampleCount);
+    std::vector<float> classProbabilities(10 * sampleCount);
     cudaError_t error = cudaMemcpy(
-        predictions.data(),
+        classProbabilities.data(),
         y_hat.getMatrix(),
-        predictions.size() * sizeof(float),
+        classProbabilities.size() * sizeof(float),
         cudaMemcpyDeviceToHost);
     if (error != cudaSuccess)
         throw std::runtime_error(cudaGetErrorString(error));
 
-    std::vector<float> predictedLabels(sampleCount);
+    std::vector<float> hostPredictedClasses(sampleCount);
     error = cudaMemcpy(
-        predictedLabels.data(),
+        hostPredictedClasses.data(),
         devicePredictions.getVector(),
         sampleCount * sizeof(float),
         cudaMemcpyDeviceToHost);
     if (error != cudaSuccess)
         throw std::runtime_error(cudaGetErrorString(error));
 
-    EvaluationMetrics metrics;
-    metrics.loss = calculateEvaluationLoss(deviceLabels, sampleCount);
-    calculateClassCounts(hostLabels, predictedLabels, metrics);
-    metrics.accuracy = calculateEvaluationAccuracy(metrics.confusionCounts, sampleCount);
-    metrics.meanConfidence =
-        calculateMeanConfidence(predictions, predictedLabels, sampleCount);
-    calculateNormalizedConfusion(metrics);
-    calculateClassRecall(metrics);
-    return metrics;
+    PredictionBatch result;
+    result.predictedClasses.resize(sampleCount);
+    result.confidenceValues.resize(sampleCount);
+    for (size_t sample = 0; sample < sampleCount; ++sample)
+    {
+        const size_t predictedClass = static_cast<size_t>(hostPredictedClasses[sample]);
+        result.predictedClasses[sample] = predictedClass;
+        result.confidenceValues[sample] =
+            classProbabilities[predictedClass * sampleCount + sample];
+    }
+    return result;
 }
-float NNG::calcAccuracy(float *testData, float *testLabels, size_t sizeTestData)
+
+float NNG::calculateEvaluationLoss(const float *hostLabels)
 {
-    NNG evaluator(sizeTestData);
-    evaluator.copyParametersFrom(*this);
-    return evaluator.evaluate(testData, testLabels).accuracy;
+    if (SIZE_TRAINING_DATA == 0 || hostLabels == nullptr)
+    {
+        throw std::invalid_argument("Evaluation loss requires labels and a non-empty batch");
+    }
+    if (SIZE_TRAINING_DATA > static_cast<size_t>(std::numeric_limits<int>::max()))
+    {
+        throw std::length_error("Evaluation sample count exceeds CUDA launcher limits");
+    }
+
+    std::vector<float> labelCopy(
+        hostLabels,
+        hostLabels + SIZE_TRAINING_DATA);
+    GVector deviceLabels(SIZE_TRAINING_DATA);
+    deviceLabels.upload(labelCopy.data());
+    return CudaLaunchers::sumCrossEntropyLoss(
+        y_hat.getMatrix(),
+        deviceLabels.getVector(),
+        static_cast<int>(SIZE_TRAINING_DATA));
 }

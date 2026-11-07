@@ -767,18 +767,20 @@ void TrainingMetricsGui::applyQueuedMetrics()
     {
         steps.push_back(static_cast<double>(metrics.step));
         trainingLosses.push_back(metrics.trainingLoss);
-        testLosses.push_back(metrics.testLoss);
-        testAccuracies.push_back(metrics.testAccuracy);
-        actualCounts = metrics.actualCounts;
-        confusionCounts = metrics.confusionCounts;
-        normalizedConfusion = metrics.normalizedConfusion;
-        meanConfidence = metrics.meanConfidence;
+        testLosses.push_back(metrics.evaluationMetrics.loss);
+        testAccuracies.push_back(metrics.evaluationMetrics.accuracy);
+        actualCounts = metrics.evaluationMetrics.actualCounts;
+        confusionCounts = metrics.evaluationMetrics.confusionCounts;
+        normalizedConfusion = metrics.evaluationMetrics.normalizedConfusion;
+        meanConfidence = metrics.evaluationMetrics.meanConfidence;
         activationHistory.push_back({metrics.step, metrics.activationDiagnostics});
         hasDiagnostics = true;
         for (size_t category = 0; category < predictedCounts.size(); ++category)
         {
-            predictedCounts[category] = static_cast<double>(metrics.predictedCounts[category]);
-            classRecall[category] = static_cast<double>(metrics.classRecall[category]);
+            predictedCounts[category] =
+                static_cast<double>(metrics.evaluationMetrics.predictedCounts[category]);
+            classRecall[category] =
+                static_cast<double>(metrics.evaluationMetrics.classRecall[category]);
         }
     }
 

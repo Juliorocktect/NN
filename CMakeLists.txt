@@ -45,7 +45,6 @@ add_library(vnn_lib
     src/algorithms/forwardPropNNG.cpp
     src/algorithms/NNG.cpp
     src/utils/ImageLoading.cpp
-    src/utils/Metrics/Metrics.cpp
     src/utils/Metrics/MetricsCsvWriter.cpp
 )
 
@@ -92,9 +91,21 @@ add_library(training_gui src/gui/TrainingMetricsGui.cpp)
 target_include_directories(training_gui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(training_gui PUBLIC PkgConfig::GTK4)
 
-add_library(training_management src/utils/TrainingManager.cpp)
+add_library(evaluation_service src/utils/Metrics/EvaluationService.cpp)
+target_include_directories(evaluation_service PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(evaluation_service PUBLIC vnn_lib)
+
+add_library(metrics_service src/utils/Metrics/Metrics.cpp)
+target_include_directories(metrics_service PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+add_library(training_management
+    src/utils/TrainingController.cpp
+    src/utils/TrainingDataLoader.cpp
+)
 target_include_directories(training_management PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(training_management PRIVATE vnn_lib training_gui)
+target_link_libraries(training_management
+    PUBLIC vnn_lib training_gui evaluation_service metrics_service
+)
 
 include(GoogleTest)
 gtest_discover_tests(nn_tests)
@@ -105,6 +116,8 @@ target_link_libraries(nn_tests PRIVATE
     MATHS
     vnn_lib
     training_gui
+    evaluation_service
+    metrics_service
     training_management
     /usr/lib/gcc/x86_64-linux-gnu/15/libstdc++.a
 )

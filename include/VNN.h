@@ -5,10 +5,10 @@
 #include <cmath>
 #include <inttypes.h>
 #include <array>
-#include <vector>
 #include <Maths.h>
 #include "GMatrix.hpp"
 #include "GVector.hpp"
+#include "PredictionBatch.hpp"
 #define SIZE_INPUT_LAYER 784
 #define SIZE_FIRST_LAYER 480
 #define SIZE_SECOND_LAYER 200
@@ -16,18 +16,6 @@
 #define LEARNING_RATE 0.01
 
 double sigmoid(double x);
-
-struct EvaluationMetrics
-{
-    float loss = 0.0f;
-    float accuracy = 0.0f;
-    float meanConfidence = 0.0f;
-    std::array<size_t, 10> actualCounts{};
-    std::array<size_t, 10> predictedCounts{};
-    std::array<size_t, 100> confusionCounts{};
-    std::array<double, 100> normalizedConfusion{};
-    std::array<float, 10> classRecall{};
-};
 
 class NNG
 {
@@ -83,22 +71,6 @@ private:
         size_t sampleCount,
         float epsilon,
         float tolerance);
-    float calculateEvaluationLoss(
-        GVector &deviceLabels,
-        size_t sampleCount);
-    void calculateClassCounts(
-        const std::vector<float> &labels,
-        const std::vector<float> &predictedLabels,
-        EvaluationMetrics &metrics) const;
-    float calculateEvaluationAccuracy(
-        const std::array<size_t, 100> &confusionCounts,
-        size_t sampleCount) const;
-    float calculateMeanConfidence(
-        const std::vector<float> &predictions,
-        const std::vector<float> &predictedLabels,
-        size_t sampleCount) const;
-    void calculateNormalizedConfusion(EvaluationMetrics &metrics) const;
-    void calculateClassRecall(EvaluationMetrics &metrics) const;
 
 public:
     NNG();
@@ -119,8 +91,9 @@ public:
      */
     void initilizeYMatrix(float *pLabels);
     float sumCrossEntropyLoss();
-    float calcAccuracy(float *testData, float *testLabels, size_t sizeTestData);
     float trainStep();
+    PredictionBatch predict(const float *data);
+    float calculateEvaluationLoss(const float *hostLabels);
     void copyParametersFrom(const NNG &source);
     void copyHiddenLayerActivations(std::array<GVector, 3> &activations);
     bool runGradientCheck(
@@ -129,7 +102,6 @@ public:
         size_t sampleCount,
         float epsilon = 1e-1f,
         float tolerance = 5e-2f) const;
-    EvaluationMetrics evaluate(const float *testData, const float *testLabels);
     void run(size_t times);
     void train(size_t times);
 };

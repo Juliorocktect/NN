@@ -14,8 +14,9 @@ TEST(ActivationMetricsTest, CountsSaturationAndSummarizesSigmoidDerivativeDistri
         firstLayerValues.data(), secondLayerValues.data(), thirdLayerValues.data()};
     const std::array<size_t, 3> activationCounts{8, 2, 2};
 
+    const Metrics::ActivationDiagnosticsCalculator calculator;
     const Metrics::ActivationDiagnostics diagnostics =
-        Metrics::calculateActivationDiagnostics(activations, activationCounts);
+        calculator.calculate(activations, activationCounts);
 
     const Metrics::ActivationLayerMetrics &firstLayerMetrics = diagnostics.layers[0];
     EXPECT_EQ(firstLayerMetrics.activationCount, 8);
@@ -50,7 +51,6 @@ TEST(ActivationMetricsTest, RejectsInvalidActivationValues)
         &invalidActivation, &validActivation, &validActivation};
     const std::array<size_t, 3> activationCounts{1, 1, 1};
 
-    EXPECT_THROW(
-        Metrics::calculateActivationDiagnostics(activations, activationCounts),
-        std::invalid_argument);
+    const Metrics::ActivationDiagnosticsCalculator calculator;
+    EXPECT_THROW(calculator.calculate(activations, activationCounts), std::invalid_argument);
 }
