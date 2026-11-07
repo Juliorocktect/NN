@@ -19,7 +19,7 @@ find_package(CUDAToolkit REQUIRED)
 include_directories(include)
 include_directories(include/Metrics/)
 #get test files
-file(GLOB TEST_FILES
+file(GLOB TEST_FILES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cu"
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp"
 )
@@ -45,7 +45,6 @@ add_library(vnn_lib
     src/algorithms/forwardPropNNG.cpp
     src/algorithms/NNG.cpp
     src/utils/ImageLoading.cpp
-    src/utils/Metrics/Metrics.cpp
     src/utils/Metrics/MetricsCsvWriter.cpp
 )
 
@@ -81,27 +80,47 @@ set_target_properties(nn_tests PROPERTIES
 
 target_link_libraries(MATHS PUBLIC CUDA::cudart)
 #target_link_libraries(test PRIVATE CUDA::cudart)
+
 # Link die Bibliothek mit dem Executable
-target_link_libraries(main_exec PRIVATE MATHS)
+target_link_libraries(main_exec PRIVATE MATHS training_management)
 target_link_libraries(vnn_lib PRIVATE MATHS)
-target_link_libraries(main_exec PRIVATE vnn_lib)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTK4 REQUIRED IMPORTED_TARGET gtk4)
 target_link_libraries(vnn_lib PRIVATE PkgConfig::GTK4)
 
+# Der GUI GTK4 geben
 add_library(training_gui src/gui/TrainingMetricsGui.cpp)
 target_include_directories(training_gui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(training_gui PUBLIC PkgConfig::GTK4)
 
-include(GoogleTest)
-gtest_discover_tests(nn_tests)
+add_library(evaluation_service src/utils/Metrics/EvaluationService.cpp)
+target_include_directories(evaluation_service PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(evaluation_service PUBLIC vnn_lib)
 
-target_link_libraries(main_exec PRIVATE training_gui)
+add_library(metrics_service src/utils/Metrics/Metrics.cpp)
+target_include_directories(metrics_service PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+add_library(training_management
+    src/utils/TrainingController.cpp
+    src/utils/TrainingDataLoader.cpp
+)
+target_include_directories(training_management PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(training_management
+    PUBLIC vnn_lib training_gui evaluation_service metrics_service
+)
+
+# problem mit dem compiler
 target_link_libraries(nn_tests PRIVATE
     GTest::gtest
     GTest::gtest_main
     MATHS
     vnn_lib
     training_gui
+    evaluation_service
+    metrics_service
+    training_management
     /usr/lib/gcc/x86_64-linux-gnu/15/libstdc++.a
 )
+
+include(GoogleTest)
+gtest_discover_tests(nn_tests)

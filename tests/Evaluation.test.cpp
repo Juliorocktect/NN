@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "EvaluationService.hpp"
 #include <VNN.h>
 
 #include <cmath>
@@ -13,7 +14,8 @@ constexpr size_t sampleCount = 4;
 EvaluationMetrics evaluateKnownLabels(NNG &network, const std::vector<float> &labels)
 {
     std::vector<float> images(SIZE_INPUT_LAYER * sampleCount, 0.0f);
-    return network.evaluate(images.data(), labels.data());
+    EvaluationService evaluationService;
+    return evaluationService.evaluate(network, images.data(), labels.data(), sampleCount);
 }
 }
 
@@ -82,17 +84,43 @@ TEST(NNGEvaluationTest, RejectsInvalidTestLabels)
     NNG network(1);
     const std::vector<float> image(SIZE_INPUT_LAYER, 0.0f);
     const std::vector<float> invalidLabels{10.0f};
+    EvaluationService evaluationService;
 
-    EXPECT_THROW(network.evaluate(image.data(), invalidLabels.data()), std::invalid_argument);
+    EXPECT_THROW(
+        evaluationService.evaluate(network, image.data(), invalidLabels.data(), 1),
+        std::invalid_argument);
 }
 
 TEST(NNGEvaluationTest, RejectsMissingEvaluationInputs)
 {
     NNG network(1);
     const std::vector<float> label{0.0f};
+    EvaluationService evaluationService;
 
-    EXPECT_THROW(network.evaluate(nullptr, label.data()), std::invalid_argument);
-    EXPECT_THROW(network.evaluate(label.data(), nullptr), std::invalid_argument);
+    EXPECT_THROW(
+        evaluationService.evaluate(network, nullptr, label.data(), 1),
+        std::invalid_argument);
+    EXPECT_THROW(
+        evaluationService.evaluate(network, label.data(), nullptr, 1),
+        std::invalid_argument);
+}
+
+TEST(NNGPredictionTest, ReturnsOneClassAndConfidencePerSample)
+{
+    NNG network(sampleCount);
+    const std::vector<float> images(SIZE_INPUT_LAYER * sampleCount, 0.0f);
+
+    const PredictionBatch predictions = network.predict(images.data());
+
+    ASSERT_EQ(predictions.predictedClasses.size(), sampleCount);
+    ASSERT_EQ(predictions.confidenceValues.size(), sampleCount);
+    for (size_t sample = 0; sample < sampleCount; ++sample)
+    {
+        EXPECT_LT(predictions.predictedClasses[sample], 10);
+        EXPECT_TRUE(std::isfinite(predictions.confidenceValues[sample]));
+        EXPECT_GE(predictions.confidenceValues[sample], 0.0f);
+        EXPECT_LE(predictions.confidenceValues[sample], 1.0f);
+    }
 }
 
 TEST(NNGEvaluationTest, CopiesHiddenLayerActivationsAfterEvaluation)
@@ -100,7 +128,8 @@ TEST(NNGEvaluationTest, CopiesHiddenLayerActivationsAfterEvaluation)
     NNG network(sampleCount);
     const std::vector<float> labels{0.0f, 1.0f, 2.0f, 3.0f};
     const std::vector<float> images(SIZE_INPUT_LAYER * sampleCount, 0.0f);
-    network.evaluate(images.data(), labels.data());
+    EvaluationService evaluationService;
+    evaluationService.evaluate(network, images.data(), labels.data(), sampleCount);
 
     std::array<GVector, 3> activations;
     network.copyHiddenLayerActivations(activations);

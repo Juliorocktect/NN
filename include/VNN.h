@@ -8,25 +8,14 @@
 #include <Maths.h>
 #include "GMatrix.hpp"
 #include "GVector.hpp"
+#include "PredictionBatch.hpp"
 #define SIZE_INPUT_LAYER 784
 #define SIZE_FIRST_LAYER 480
 #define SIZE_SECOND_LAYER 200
 #define SIZE_THIRD_LAYER 180
-#define LEARNING_RATE 0.001
+#define LEARNING_RATE 0.01
 
 double sigmoid(double x);
-
-struct EvaluationMetrics
-{
-    float loss = 0.0f;
-    float accuracy = 0.0f;
-    float meanConfidence = 0.0f;
-    std::array<size_t, 10> actualCounts{};
-    std::array<size_t, 10> predictedCounts{};
-    std::array<size_t, 100> confusionCounts{};
-    std::array<double, 100> normalizedConfusion{};
-    std::array<float, 10> classRecall{};
-};
 
 class NNG
 {
@@ -102,8 +91,29 @@ public:
      */
     void initilizeYMatrix(float *pLabels);
     float sumCrossEntropyLoss();
-    float calcAccuracy(float *testData, float *testLabels, size_t sizeTestData);
     float trainStep();
+    /**
+     * @brief Runs forward propagation and returns a class prediction and confidence per sample.
+     *
+     * The input batch size is determined by the network's configured training-data size.
+     *
+     * @param data Input data in feature-major, sample-minor layout.
+     * @return Predicted class labels and their probabilities for each sample.
+     * @throws std::invalid_argument If the network batch size is zero or data is null.
+     * @throws std::length_error If the batch exceeds the CUDA argmax launcher's limits.
+     * @throws std::runtime_error If a CUDA operation fails.
+     */
+    PredictionBatch predict(const float *data);
+    /**
+     * @brief Calculates mean cross-entropy loss for the most recent forward pass.
+     *
+     * @param hostLabels Host-side class labels corresponding to that forward pass.
+     * @return Mean cross-entropy loss.
+     * @throws std::invalid_argument If the network batch size is zero or labels is null.
+     * @throws std::length_error If the batch exceeds the CUDA loss launcher's limits.
+     * @throws std::runtime_error If a CUDA operation fails.
+     */
+    float calculateEvaluationLoss(const float *hostLabels);
     void copyParametersFrom(const NNG &source);
     void copyHiddenLayerActivations(std::array<GVector, 3> &activations);
     bool runGradientCheck(
@@ -112,7 +122,9 @@ public:
         size_t sampleCount,
         float epsilon = 1e-1f,
         float tolerance = 5e-2f) const;
-    EvaluationMetrics evaluate(const float *testData, const float *testLabels);
     void run(size_t times);
+    void train(size_t times);
 };
+
+
 #endif

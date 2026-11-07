@@ -450,7 +450,20 @@ gboolean TrainingMetricsGui::onUiUpdate(gpointer userData)
         {
             gui->trainingActive = false;
             gui->trainingCompleted = true;
-            gtk_label_set_text(GTK_LABEL(gui->statusLabel), "Abgeschlossen");
+            if (gui->finalTestAccuracy.has_value())
+            {
+                char completionText[80];
+                std::snprintf(
+                    completionText,
+                    sizeof(completionText),
+                    "Abgeschlossen | Testgenauigkeit: %.2f%%",
+                    static_cast<double>(gui->finalTestAccuracy.value()) * 100.0);
+                gtk_label_set_text(GTK_LABEL(gui->statusLabel), completionText);
+            }
+            else
+            {
+                gtk_label_set_text(GTK_LABEL(gui->statusLabel), "Abgeschlossen");
+            }
             gui->updateControls();
         }
     }
@@ -690,6 +703,15 @@ void TrainingMetricsGui::queueMetrics(const Metrics::TrainingMetricsSnapshot &me
     pendingMetrics.push_back(metrics);
 }
 
+void TrainingMetricsGui::queueFinalTestAccuracy(float accuracy)
+{
+    if (!std::isfinite(accuracy) || accuracy < 0.0f || accuracy > 1.0f)
+        throw std::invalid_argument("Final test accuracy must be between 0 and 1");
+
+    std::lock_guard<std::mutex> lock(trainingMutex);
+    pendingFinalTestAccuracy = accuracy;
+}
+
 void TrainingMetricsGui::runTrainingWorker()
 {
     while (true)
@@ -731,27 +753,34 @@ void TrainingMetricsGui::runTrainingWorker()
 void TrainingMetricsGui::applyQueuedMetrics()
 {
     std::vector<Metrics::TrainingMetricsSnapshot> metricsToApply;
+    std::optional<float> finalAccuracyToApply;
     {
         std::lock_guard<std::mutex> lock(trainingMutex);
         metricsToApply.swap(pendingMetrics);
+        finalAccuracyToApply.swap(pendingFinalTestAccuracy);
     }
+
+    if (finalAccuracyToApply.has_value())
+        finalTestAccuracy = finalAccuracyToApply;
 
     for (const Metrics::TrainingMetricsSnapshot &metrics : metricsToApply)
     {
         steps.push_back(static_cast<double>(metrics.step));
         trainingLosses.push_back(metrics.trainingLoss);
-        testLosses.push_back(metrics.testLoss);
-        testAccuracies.push_back(metrics.testAccuracy);
-        actualCounts = metrics.actualCounts;
-        confusionCounts = metrics.confusionCounts;
-        normalizedConfusion = metrics.normalizedConfusion;
-        meanConfidence = metrics.meanConfidence;
+        testLosses.push_back(metrics.evaluationMetrics.loss);
+        testAccuracies.push_back(metrics.evaluationMetrics.accuracy);
+        actualCounts = metrics.evaluationMetrics.actualCounts;
+        confusionCounts = metrics.evaluationMetrics.confusionCounts;
+        normalizedConfusion = metrics.evaluationMetrics.normalizedConfusion;
+        meanConfidence = metrics.evaluationMetrics.meanConfidence;
         activationHistory.push_back({metrics.step, metrics.activationDiagnostics});
         hasDiagnostics = true;
         for (size_t category = 0; category < predictedCounts.size(); ++category)
         {
-            predictedCounts[category] = static_cast<double>(metrics.predictedCounts[category]);
-            classRecall[category] = static_cast<double>(metrics.classRecall[category]);
+            predictedCounts[category] =
+                static_cast<double>(metrics.evaluationMetrics.predictedCounts[category]);
+            classRecall[category] =
+                static_cast<double>(metrics.evaluationMetrics.classRecall[category]);
         }
     }
 
