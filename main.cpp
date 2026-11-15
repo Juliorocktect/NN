@@ -10,11 +10,12 @@ int main()
     try
     {
         const TrainingConfig config;
+        const ConvolutionConfig convolutionConfig;
         const TrainingDataLoader dataLoader;
         TrainingDataset dataset = dataLoader.load(config);
 
         const TrainingController trainingController;
-        trainingController.run(dataset, config);
+        trainingController.run(dataset, config, convolutionConfig);
         return 0;
     }
     catch (const std::exception &error)

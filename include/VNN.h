@@ -2,8 +2,6 @@
 #define VNN
 #pragma once
 #include <iostream>
-#include <cmath>
-#include <inttypes.h>
 #include <array>
 #include <Maths.h>
 #include "GMatrix.hpp"
@@ -60,7 +58,7 @@ private:
     GMatrix dW3;       // Derivation of weights Layer 3 180x200
     GMatrix dW4;       // Derivation of weights Output Layer 4 10x180
     GVector labels;    // 60.000 labels to the 60.000 images points to gpu
-
+    
     double calculateGradientCheckLoss(const float *hostLabels, size_t sampleCount);
     bool checkGradientParameterBlock(
         const char *name,
@@ -125,6 +123,5 @@ public:
     void run(size_t times);
     void train(size_t times);
 };
-
 
 #endif

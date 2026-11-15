@@ -250,5 +250,19 @@ namespace CudaKernels
      * @return __global__
      */
     __global__ void meanMatrixRowise(float *mat, float *matResult, size_t rows, size_t cols);
+
+    /**
+     * @brief der Cuda Kernel für die Convolution. Es wird ein Input Matrix und ein Kernel Matrix übergeben. Der Output ist eine Matrix, die das Ergebnis der Convolution enthält.
+     *
+     * @param input
+     * @param kernel
+     * @param output
+     * @param inputRows
+     * @param inputCols
+     * @param kernelRows
+     * @param kernelCols
+     * @return __global__
+     */
+    __global__ void convolutionKernel1(const float *input, const float *kernel, float *output, size_t inputRows, size_t inputCols, size_t kernelRows, size_t kernelCols);
 };
 #endif

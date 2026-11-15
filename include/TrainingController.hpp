@@ -18,7 +18,7 @@ public:
      * @throws std::invalid_argument If the dataset or configuration is invalid.
      * @throws std::runtime_error If training, evaluation, or metrics output fails.
      */
-    void run(TrainingDataset &dataset, const TrainingConfig &config) const;
+    void run(TrainingDataset &dataset, const TrainingConfig &config, const ConvolutionConfig &convolutionConfig) const;
 
 private:
     /** @brief Runtime data kept alive while the GUI invokes the training callback. */

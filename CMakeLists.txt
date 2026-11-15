@@ -36,7 +36,6 @@ file(GLOB MODEL_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/models/*.cu"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/models/*.cpp"
 )
-
 #message(STATUS "CUDA_SOURCES = ${CUDA_SOURCES}")
 # Library aus src und include
 add_library(MATHS ${CUDA_SOURCES} ${MODEL_SOURCES})
@@ -105,6 +104,8 @@ add_library(training_management
     src/utils/TrainingController.cpp
     src/utils/TrainingDataLoader.cpp
 )
+
+
 target_include_directories(training_management PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(training_management
     PUBLIC vnn_lib training_gui evaluation_service metrics_service

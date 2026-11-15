@@ -25,7 +25,8 @@ namespace CudaLaunchers
      * @param cols2
      * @return float*
      */
-    float *multiply(float *mat1, const float *mat2, float *matResult, int rows1, int cols1, int cols2);
+    float *multiply(float *mat1, const float *mat2, float *matResult, int rows1,
+                    int cols1, int cols2);
     /**
      * @brief Cuda launcher for matrix subtraction kernel
      *
@@ -48,7 +49,8 @@ namespace CudaLaunchers
     float *divide(const float *mat1, double v, float *matResult, size_t size);
     /**
      * @brief Cuda launcher for Hadamard product kernel
-     * Hadamard means each index i1 is multplied by i2 from the second matrix, so the result is a matrix of the same size as the input matrices.
+     * Hadamard means each index i1 is multplied by i2 from the second matrix, so
+     * the result is a matrix of the same size as the input matrices.
      *
      * @param mat1
      * @param mat2
@@ -56,7 +58,8 @@ namespace CudaLaunchers
      * @param size
      * @return float*
      */
-    void hadamardProduct(float *mat1, const float *mat2, float *matResult, size_t size);
+    void hadamardProduct(float *mat1, const float *mat2, float *matResult,
+                         size_t size);
     /**
      * @brief Cuda launcher for vector addition kernel
      *
@@ -66,7 +69,8 @@ namespace CudaLaunchers
      * @param size
      * @return float*
      */
-    float *vectorAddition(const float *vec1, const float *vec2, float *vecResult, size_t size);
+    float *vectorAddition(const float *vec1, const float *vec2, float *vecResult,
+                          size_t size);
     /**
      * @brief Cuda launcher for vector subtraction kernel
      *
@@ -76,12 +80,15 @@ namespace CudaLaunchers
      * @param size
      * @return float*
      */
-    void vectorSubtraction(const float *vec1, const float *vec2, float *vecResult, size_t size);
+    void vectorSubtraction(const float *vec1, const float *vec2, float *vecResult,
+                           size_t size);
 
     /**
      * @brief Cuda launcher for summing cross-entropy loss kernel
-     *  Sum Cross-Entropy Loss is a common loss function used in machine learning for classification tasks. It measures the difference between the predicted probability distribution and the true distribution (targets). The formula for cross-entropy loss is:
-     *  Formula: L = -Σ (y * log(p) + (1 - y) * log(1 - p))
+     *  Sum Cross-Entropy Loss is a common loss function used in machine learning
+     * for classification tasks. It measures the difference between the predicted
+     * probability distribution and the true distribution (targets). The formula for
+     * cross-entropy loss is: Formula: L = -Σ (y * log(p) + (1 - y) * log(1 - p))
      * @param predictions
      * @param targets
      * @param loss
@@ -89,7 +96,8 @@ namespace CudaLaunchers
      * @return float*
      */
 
-    float *sumCrossEntropyLoss(const float *predictions, const float *targets, float *loss, size_t size);
+    float *sumCrossEntropyLoss(const float *predictions, const float *targets,
+                               float *loss, size_t size);
     /**
      * @brief Cuda launcher for matrix transpose kernel
      *
@@ -104,7 +112,8 @@ namespace CudaLaunchers
     /**
      * @brief Cuda launcher for argmax kernel
      *
-     *  Argmax is a function that returns the index of the maximum value in a given matrix.
+     *  Argmax is a function that returns the index of the maximum value in a given
+     * matrix.
      *
      * @param mat
      * @param rows
@@ -145,7 +154,8 @@ namespace CudaLaunchers
      * @param cols
      * @param rows
      */
-    void vectorAddMatrix(float *mat, float *vec, float *matResult, size_t sizeVec, size_t rows, size_t cols);
+    void vectorAddMatrix(float *mat, float *vec, float *matResult, size_t sizeVec,
+                         size_t rows, size_t cols);
     /**
      * @brief applys sigmoid function to each element of the matrix
      *
@@ -181,7 +191,8 @@ namespace CudaLaunchers
      * @param numSamples SIZE_TRAINING_DATA
      * @return float
      */
-    float sumCrossEntropyLoss(const float *y_hat, const float *labels, int numSamples);
+    float sumCrossEntropyLoss(const float *y_hat, const float *labels,
+                              int numSamples);
 
     /**
      * @brief Multiplies every single value of Matrix with the value
@@ -192,7 +203,8 @@ namespace CudaLaunchers
      * @param rows
      * @param cols
      */
-    void matrixMultiplicationWithFloat(float *mat, float value, float *matResult, size_t rows, size_t cols);
+    void matrixMultiplicationWithFloat(float *mat, float value, float *matResult,
+                                       size_t rows, size_t cols);
 
     /**
      * @brief multiplies vec * float
@@ -202,10 +214,13 @@ namespace CudaLaunchers
      * @param value
      * @param size
      */
-    void vectorValueMultiplication(float *vec, float *vecResult, float value, size_t size);
+    void vectorValueMultiplication(float *vec, float *vecResult, float value,
+                                   size_t size);
 
     /**
-     * @brief`calcMeanFromMatrixRowise` calculates the mean value of each row in a matrix. It sums all elements in a row and divides the sum by the number of elements in that row.
+     * @brief`calcMeanFromMatrixRowise` calculates the mean value of each row in a
+     * matrix. It sums all elements in a row and divides the sum by the number of
+     * elements in that row.
      *
      * @param mat
      * @param matResult
@@ -213,6 +228,8 @@ namespace CudaLaunchers
      * @param cols
      */
     void meanMatrixRowise(float *mat, float *matResult, size_t rows, size_t cols);
-};
+
+    void convolutionFirstLayer(const float *input, const float *kernel, float *output, size_t inputRows, size_t inputCols, size_t kernelRows, size_t kernelCols);
+}; // namespace CudaLaunchers
 
 #endif

@@ -223,7 +223,8 @@ void TrainingController::predictImage(
  */
 void TrainingController::run(
     TrainingDataset &dataset,
-    const TrainingConfig &config) const
+    const TrainingConfig &config,
+    const ConvolutionConfig &convolutionConfig) const
 {
     const bool imageDimensionsOverflow =
         config.imageHeight != 0 &&
